@@ -1,5 +1,11 @@
 # Release notes
 
+## v0.0.7
+
+Copy from https://github.com/tillitis/tillitis-key1-apps
+
+With only test and example apps left.
+
 ## v0.0.6
 
 - Change maximum frame length back to 128 bytes.
