@@ -38,19 +38,6 @@ jobs:
           cd tkey-libs
           make
 
-      - name: Clone signer
-        uses: actions/checkout@v3
-        with:
-          repository: tillitis/tkey-device-signer
-          ref: main
-          path: tkey-device-signer
-
-      - name: make signer
-        run: make -j -C tkey-device-signer LIBDIR=../tkey-libs
-
-      - name: Copy signer
-        run: cp tkey-device-signer/signer/app.bin cmd/tkey-ssh-agent/app.bin
-
       - name: make
         run: make -j LIBDIR=../tkey-libs
 
