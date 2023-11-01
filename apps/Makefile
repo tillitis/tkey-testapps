@@ -53,7 +53,6 @@ $(NX_OBJS): $(INCLUDE)/tk1_mem.h
 blink/app.elf: blink/blink.o
 	ld.lld -o $@ blink/blink.o --oformat elf
 
-# Blinkenlights assembler app
 echo/app.elf: echo/echo.o
 	ld.lld -o $@ echo/echo.o --oformat elf
 

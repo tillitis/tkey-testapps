@@ -10,18 +10,18 @@ _start:
         li a1, 0xc3000084 # rx data
         li a2, 0xc3000100 # tx status
         li a3, 0xc3000104 # tx data
-        
+
 read:
-        # ready to rx?        
+        # ready to rx?
         lw a4, 0(a0)
-        beq a4,zero,read 
+        beq a4,zero,read
 write:
         # ready to tx?
         lw a4, 0(a2)
-        beq a4,zero,write 
+        beq a4,zero,write
 
         # rx to tx
         lw a4, 0(a1)
-        sw a4, 0(a3) 
+        sw a4, 0(a3)
 
         j read
