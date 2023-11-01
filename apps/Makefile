@@ -22,7 +22,7 @@ ASFLAGS = -target riscv32-unknown-none-elf -march=rv32iczmmul -mabi=ilp32 -mcmod
 LDFLAGS=-T $(LIBDIR)/app.lds -L $(LIBDIR)/libcommon/ -lcommon -L $(LIBDIR)/libcrt0/ -lcrt0
 
 .PHONY: all
-all: timer/app.bin rng_stream/app.bin blink/app.bin nx/app.bin touch/app.bin
+all: timer/app.bin rng_stream/app.bin blink/app.bin echo/app.bin nx/app.bin touch/app.bin
 
 # Turn elf into bin for device
 %.bin: %.elf
@@ -52,6 +52,10 @@ $(NX_OBJS): $(INCLUDE)/tk1_mem.h
 # Blinkenlights assembler app
 blink/app.elf: blink/blink.o
 	ld.lld -o $@ blink/blink.o --oformat elf
+
+# Blinkenlights assembler app
+echo/app.elf: echo/echo.o
+	ld.lld -o $@ echo/echo.o --oformat elf
 
 TOUCHOBJS = touch/main.o
 touch/app.elf: $(LIBS) $(TOUCHOBJS)
