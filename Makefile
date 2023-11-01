@@ -28,6 +28,11 @@ apps:
 runtimer:
 	go build ./cmd/runtimer
 
+
+.PHONY: throttle
+throttle:
+	go build ./cmd/throttle
+
 .PHONY: clean
 clean:
 	rm -f runtimer
