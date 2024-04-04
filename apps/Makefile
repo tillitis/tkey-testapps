@@ -58,6 +58,12 @@ touch/app.elf: $(LIBS) $(TOUCHOBJS)
 	$(CC) $(CFLAGS) $(TOUCHOBJS) $(LDFLAGS) -o $@
 $(TOUCHOBJS): $(INCLUDE)/tk1_mem.h
 
+
+DUMPOBJS = ram_dump/main.o
+ram_dump/app.elf: $(LIBS) $(DUMPOBJS)
+	$(CC) $(CFLAGS) $(DUMPOBJS) $(LDFLAGS) -o $@
+$(DUMPOBJS): $(INCLUDE)/tk1_mem.h
+
 .PHONY: clean
 clean:
 	rm -f timer/app.bin timer/app.elf $(TIMEROBJS)
@@ -65,6 +71,7 @@ clean:
 	rm -f blink/app.bin blink/app.elf blink/blink.o
 	rm -f nx/app.bin nx/app.elf nx/main.o
 	rm -f touch/app.bin touch/app.elf touch/main.o
+	rm -f dump_ram/app.bin dump_ram/app.elf dump_ram/main.o
 
 # Uses ../.clang-format
 FMTFILES=timer/*.[ch] rng_stream/*.[ch] nx/main.c touch/*.[ch]
