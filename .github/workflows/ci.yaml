@@ -13,16 +13,16 @@ jobs:
   ci:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/tillitis/tkey-builder:2
+      image: ghcr.io/tillitis/tkey-builder:4
     steps:
       - name: checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           # fetch-depth: 0
           persist-credentials: false
 
       - name: Clone tkey-libs
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: tillitis/tkey-libs
           ref: main
@@ -39,7 +39,7 @@ jobs:
           make
 
       - name: make
-        run: make -j LIBDIR=../tkey-libs
+        run: ./build.sh
 
       - name: lint go code
         run: make lint
