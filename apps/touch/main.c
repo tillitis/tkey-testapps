@@ -37,7 +37,7 @@ int main(void)
 {
 
 	for (;;) {
-		// Wait for a touch, confirming a succesfull touch by
+		// Wait for a touch, confirming a successful touch by
 		// waiting with a new color. Continuing indefinitely.
 		wait_touch_ledflash(LED_GREEN, 350000);
 		wait_touch_ledflash(LED_RED, 350000);

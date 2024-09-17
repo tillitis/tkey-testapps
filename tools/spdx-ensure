@@ -24,7 +24,12 @@ Makefile
 README.md
 RELEASE.md
 apps/Makefile
+apps/blink/Makefile
+apps/nx/Makefile
 apps/rng_stream/README.md
+apps/rng_stream/Makefile
+apps/timer/Makefile
+apps/touch/Makefile
 build.sh
 dco.md
 go.mod
