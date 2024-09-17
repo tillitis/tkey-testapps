@@ -50,7 +50,7 @@ If you want to do it manually, clone and build tkey-libs and
 tkey-device-signer manually like this:
 
 ```
-$ git clone -b v0.0.1 https://github.com/tillitis/tkey-libs
+$ git clone -b v0.1.1 https://github.com/tillitis/tkey-libs
 $ cd tkey-libs
 $ make
 ```
@@ -71,14 +71,14 @@ your system.
 If you want to use podman and you have `make` you can run:
 
 ```
-$ podman pull ghcr.io/tillitis/tkey-builder:2
+$ podman pull ghcr.io/tillitis/tkey-builder:4
 $ make podman
 ```
 
 or run podman directly with
 
 ```
-$ podman run --rm --mount type=bind,source=$(CURDIR),target=/src --mount type=bind,source=$(CURDIR)/../tkey-libs,target=/tkey-libs -w /src -it ghcr.io/tillitis/tkey-builder:2 make -j
+$ podman run --rm --mount type=bind,source=$(CURDIR),target=/src --mount type=bind,source=$(CURDIR)/../tkey-libs,target=/tkey-libs -w /src -it ghcr.io/tillitis/tkey-builder:4 make -j
 ```
 
 ## Licenses and SPDX tags

@@ -1,4 +1,4 @@
-// Copyright (C) 2022 - Tillitis AB
+// Copyright (C) 2022-2024 - Tillitis AB
 // SPDX-License-Identifier: GPL-2.0-only
 
 // rng stream extraction app.
@@ -6,8 +6,10 @@
 // When loaded and started, this app will continiously generate random data
 // words and send them to the host as a stream of bytes.
 
-#include <lib.h>
-#include <tk1_mem.h>
+#include <stdint.h>
+#include <tkey/blake2s.h>
+#include <tkey/lib.h>
+#include <tkey/tk1_mem.h>
 
 #define RESEED_TIME 1000
 

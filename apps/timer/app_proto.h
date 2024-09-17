@@ -1,11 +1,11 @@
-// Copyright (C) 2022 - Tillitis AB
+// Copyright (C) 2022-2024 - Tillitis AB
 // SPDX-License-Identifier: GPL-2.0-only
 
 #ifndef APP_PROTO_H
 #define APP_PROTO_H
 
-#include <lib.h>
-#include <proto.h>
+#include <tkey/lib.h>
+#include <tkey/proto.h>
 
 // clang-format off
 enum appcmd {

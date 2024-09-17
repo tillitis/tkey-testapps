@@ -1,4 +1,4 @@
-// Copyright (C) 2023 - Tillitis AB
+// Copyright (C) 2023-2024 - Tillitis AB
 // SPDX-License-Identifier: GPL-2.0-only
 
 // Test of the execution monitor. Should blink green 5 times, then the
@@ -8,8 +8,9 @@
 // monitor address. If it starts blinking green again after blinking
 // white it was possible to turn it off.
 
-#include <lib.h>
-#include <tk1_mem.h>
+#include <stdint.h>
+#include <tkey/lib.h>
+#include <tkey/tk1_mem.h>
 
 // clang-format off
 volatile uint32_t *cpu_mon_ctrl  = (volatile uint32_t *)TK1_MMIO_TK1_CPU_MON_CTRL;

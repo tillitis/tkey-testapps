@@ -13,13 +13,12 @@ CFLAGS = -target riscv32-unknown-none-elf -march=rv32iczmmul -mabi=ilp32 -mcmode
    -static -std=gnu99 -O2 -ffast-math -fno-common -fno-builtin-printf \
    -fno-builtin-putchar -nostdlib -mno-relax -flto -g \
    -Wall -Werror=implicit-function-declaration \
-   -I $(INCLUDE) -I $(LIBDIR)  \
-   -DNODEBUG
+   -I $(INCLUDE) -I $(LIBDIR) #-DQEMU_DEBUG
 
 AS = clang
 ASFLAGS = -target riscv32-unknown-none-elf -march=rv32iczmmul -mabi=ilp32 -mcmodel=medany -mno-relax
 
-LDFLAGS=-T $(LIBDIR)/app.lds -L $(LIBDIR)/libcommon/ -lcommon -L $(LIBDIR)/libcrt0/ -lcrt0
+LDFLAGS=-T $(LIBDIR)/app.lds -L $(LIBDIR) -lcommon -lcrt0
 
 .PHONY: all
 all: app.bin
@@ -36,7 +35,7 @@ show-hash: app.bin
 OBJS =main.o app_proto.o
 app.elf: $(OBJS)
 	$(CC) $(CFLAGS) $(OBJS) $(LDFLAGS) -o $@
-$(OBJS): $(INCLUDE)/tk1_mem.h app_proto.h
+$(OBJS): $(INCLUDE)/tkey/tk1_mem.h app_proto.h
 
 .PHONY: clean
 clean:

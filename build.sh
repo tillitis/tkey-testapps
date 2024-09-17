@@ -1,8 +1,18 @@
 #! /bin/sh
 
-LIBDIR=../tkey-libs
+# Copyright (C) 2023-2024 - Tillitis AB
+# SPDX-License-Identifier: GPL-2.0-only
 
-git clone -b v0.0.1 https://github.com/tillitis/tkey-libs.git ../tkey-libs
+tkey_libs_version="v0.1.1"
+
+printf "Building tkey-libs with version: %s\n" "$tkey_libs_version"
+
+if [ -d ../tkey-libs ]
+then
+    (cd ../tkey-libs; git checkout "$tkey_libs_version")
+else
+    git clone -b "$tkey_libs_version" https://github.com/tillitis/tkey-libs.git ../tkey-libs
+fi
 
 make -j -C ../tkey-libs
 

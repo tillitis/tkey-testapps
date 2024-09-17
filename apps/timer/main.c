@@ -1,10 +1,11 @@
-// Copyright (C) 2022, 2023 - Tillitis AB
+// Copyright (C) 2022-2024 - Tillitis AB
 // SPDX-License-Identifier: GPL-2.0-only
 
-#include <lib.h>
-#include <proto.h>
-#include <tk1_mem.h>
-#include <types.h>
+#include <stdint.h>
+#include <tkey/lib.h>
+#include <tkey/proto.h>
+#include <tkey/qemu_debug.h>
+#include <tkey/tk1_mem.h>
 
 #include "app_proto.h"
 
@@ -38,7 +39,7 @@ int main(void)
 
 		memset(cmd, 0, CMDLEN_MAXBYTES);
 		// Read app command, blocking
-		read(cmd, hdr.len);
+		read(cmd, CMDLEN_MAXBYTES, hdr.len);
 
 		// Is it for us?
 		if (hdr.endpoint != DST_SW) {

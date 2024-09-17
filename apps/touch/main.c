@@ -1,8 +1,8 @@
-// Copyright (C) 2022, 2023 - Tillitis AB
+// Copyright (C) 2022-2024 - Tillitis AB
 // SPDX-License-Identifier: GPL-2.0-only
 
-#include <tk1_mem.h>
-#include <types.h>
+#include <stdint.h>
+#include <tkey/tk1_mem.h>
 
 // clang-format off
 static volatile uint32_t *led =   (volatile uint32_t *)TK1_MMIO_TK1_LED;

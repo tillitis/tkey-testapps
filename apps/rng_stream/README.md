@@ -1,4 +1,3 @@
-
 # rng_stream
 
 ## Introduction

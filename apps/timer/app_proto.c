@@ -1,7 +1,8 @@
-// Copyright (C) 2022 - Tillitis AB
+// Copyright (C) 2022-2024 - Tillitis AB
 // SPDX-License-Identifier: GPL-2.0-only
 
 #include "app_proto.h"
+#include <tkey/qemu_debug.h>
 
 // Send app reply with frame header, response code, and LEN_X-1 bytes from buf
 void appreply(struct frame_header hdr, enum appcmd rspcode, void *buf)
