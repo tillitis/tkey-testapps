@@ -5,3 +5,7 @@
 /runtimer
 /gotools/golangci-lint
 test/venv
+
+# Clangd
+compile_commands.json
+.cache
