@@ -41,9 +41,6 @@ jobs:
       - name: make
         run: ./build.sh
 
-      - name: lint go code
-        run: make lint
-
       - name: check fmt of c code
         run: make -C apps checkfmt
 

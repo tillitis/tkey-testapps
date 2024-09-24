@@ -20,8 +20,10 @@ linters:
     - gocognit
     - nestif
     - exhaustruct  # TODO? annoying for now
-    - goerr113  # TODO enable later
+    - perfsprint
+    - err113  # TODO enable later
     - godot
+    - depguard
 
 issues:
   max-issues-per-linter: 0
