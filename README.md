@@ -8,7 +8,8 @@ This repository contains some test and example applications for the
 
 Client apps:
 
-- `runtimer`: Control the `timer` device app.
+- `runtimer`: Control the `timer` device app. NOTA BENE! Doesn't load
+  the `timer`. Please load it first with `tkey-runapp`.
 
 Device apps:
 
@@ -17,8 +18,10 @@ Device apps:
   [tkey-random-generator](https://github.com/tillitis/tkey-random-generator)
   for something more polished.
 - `blink`: A minimalistic example in assembly.
-- `nx`: Test program for the execution monitor.
-- `timer`: Example/test app on how to use the hardware timer.
+- `nx`: Test program for the execution monitor. Should blink green
+  then immediately do a hardware trap and blink red forever.
+- `timer`: Example/test app on how to use the hardware timer. Feed it
+  with data with `runtimer`.
 - `touch`: Example/test app for the touch sensor. Cycles between
   colours when touching.
 
