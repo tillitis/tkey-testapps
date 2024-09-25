@@ -25,68 +25,128 @@ var (
 	verbose = false
 )
 
+type cmd struct {
+	cmd  int
+	name string
+}
+
+var (
+	cmdStart   = cmd{0, "start"}
+	cmdInstall = cmd{1, "install"}
+)
+
 func main() {
-	var fileName, devPath, fileUSS, preloadApp string
+	var appPath, devPath, fileUSS string
 	var speed int
-	var enterUSS, helpOnly, startFromFlash bool
-	pflag.CommandLine.SetOutput(os.Stderr)
-	pflag.CommandLine.SortFlags = false
-	pflag.StringVar(&devPath, "port", "",
-		"Set serial port device `PATH`. If this is not passed, auto-detection will be attempted.")
-	pflag.IntVar(&speed, "speed", tkeyclient.SerialSpeed,
-		"Set serial port speed in `BPS` (bits per second).")
-	pflag.BoolVar(&enterUSS, "uss", false,
-		"Enable typing of a phrase to be hashed as the User Supplied Secret. The USS is loaded onto the TKey along with the app itself and used by the firmware, together with other material, for deriving secrets for the application.")
-	pflag.StringVar(&fileUSS, "uss-file", "",
-		"Read `FILE` and hash its contents as the USS. Use '-' (dash) to read from stdin. The full contents are hashed unmodified (e.g. newlines are not stripped).")
-	pflag.StringVar(&preloadApp, "preload-app", "",
-		"The `APP` to store in flash, as a preloaded app.")
-	pflag.BoolVar(&startFromFlash, "start", false, "Start a preloaded app in flash.")
-	pflag.BoolVar(&verbose, "verbose", false, "Enable verbose output.")
-	pflag.BoolVar(&helpOnly, "help", false, "Output this help.")
-	versionOnly := pflag.BoolP("version", "v", false, "Output version information.")
-	pflag.Usage = func() {
-		desc := fmt.Sprintf(`Usage: %[1]s [flags...] FILE
-
-%[1]s loads an application binary from FILE onto Tillitis TKey
-and starts it.
-
-Exit status code is 0 if the app is both successfully loaded and started. Exit
-code is non-zero if anything goes wrong, for example if TKey is already
-running some app.`, os.Args[0])
-		le.Printf("%s\n\n%s", desc,
-			pflag.CommandLine.FlagUsagesWrapped(86))
-	}
-	pflag.Parse()
+	var enterUSS, helpOnly, overwrite bool
 
 	if version == "" {
 		version = readBuildInfo()
 	}
 
-	if pflag.NArg() > 0 {
-		if pflag.NArg() > 1 {
-			le.Printf("Unexpected argument: %s\n\n", strings.Join(pflag.Args()[1:], " "))
-			pflag.Usage()
+	// Default flags to show
+	pflag.CommandLine.SetOutput(os.Stderr)
+	root := pflag.NewFlagSet("root", pflag.ExitOnError)
+	root.BoolVar(&verbose, "verbose", false, "Enable verbose output.")
+	versionOnly := root.BoolP("version", "v", false, "Output version information.")
+	root.BoolVarP(&helpOnly, "help", "h", false, "Output this help.")
+	root.Usage = func() {
+		desc := fmt.Sprintf(`%[1]s is a WIP Client Management
+app for the Tillitis' TKey.
+
+Usage:
+  %[1]s <command> [flags] FILE...
+
+Commands:
+  start       Starts an already installed app
+  install     Verify signature of previously generated data
+
+Use <command> --help for further help, i.e. %[1]s verify --help
+
+Flags:`, os.Args[0])
+		le.Printf("%s\n%s", desc,
+			root.FlagUsagesWrapped(86))
+	}
+
+	// Flags for the command cmdStart
+	cmdStartFlags := pflag.NewFlagSet(cmdStart.name, pflag.ExitOnError)
+	cmdStartFlags.SortFlags = false
+	cmdStartFlags.StringVar(&devPath, "port", "",
+		"Set serial port device `PATH`. If this is not passed, auto-detection will be attempted.")
+	cmdStartFlags.IntVar(&speed, "speed", tkeyclient.SerialSpeed,
+		"Set serial port speed in `BPS` (bits per second).")
+	cmdStartFlags.BoolVar(&helpOnly, "help", false, "Output this help.")
+	cmdStartFlags.Usage = func() {
+		desc := fmt.Sprintf(`Usage: %[1]s [flags...] 
+
+Sends a command to the connected TKey to start the preloaded app.`, os.Args[0])
+		le.Printf("%s\n\n%s", desc,
+			cmdStartFlags.FlagUsagesWrapped(86))
+	}
+
+	// Flags for the command cmdInstall
+	cmdInstallFlags := pflag.NewFlagSet(cmdInstall.name, pflag.ExitOnError)
+	cmdInstallFlags.SortFlags = false
+	cmdInstallFlags.BoolVar(&overwrite, "overwrite", false,
+		"Overwrite the already installed app.")
+	cmdInstallFlags.StringVar(&devPath, "port", "",
+		"Set serial port device `PATH`. If this is not passed, auto-detection will be attempted.")
+	cmdInstallFlags.IntVar(&speed, "speed", tkeyclient.SerialSpeed,
+		"Set serial port speed in `BPS` (bits per second).")
+	cmdInstallFlags.BoolVar(&enterUSS, "uss", false,
+		"Enable typing of a phrase to be hashed as the User Supplied Secret. The USS is loaded onto the TKey along with the app itself and used by the firmware, together with other material, for deriving secrets for the application.")
+	cmdInstallFlags.StringVar(&fileUSS, "uss-file", "",
+		"Read `FILE` and hash its contents as the USS. Use '-' (dash) to read from stdin. The full contents are hashed unmodified (e.g. newlines are not stripped).")
+	cmdInstallFlags.BoolVar(&helpOnly, "help", false, "Output this help.")
+	cmdInstallFlags.Usage = func() {
+		desc := fmt.Sprintf(`Usage: %[1]s [flags...] <app> 
+
+Installs the specified app on the connected TKey.`, os.Args[0])
+		le.Printf("%s\n\n%s", desc,
+			cmdInstallFlags.FlagUsagesWrapped(86))
+	}
+
+	// No arguments, print and exit
+	if len(os.Args) == 1 {
+		root.Usage()
+		os.Exit(2)
+	}
+
+	// version? Print and exit
+	if len(os.Args) == 2 {
+		if err := root.Parse(os.Args); err != nil {
+			le.Printf("Error parsing input arguments: %v\n", err)
 			os.Exit(2)
 		}
-		fileName = pflag.Args()[0]
+		if *versionOnly {
+			le.Printf("tkey-mgmt %s", version)
+			os.Exit(0)
+		}
+		if helpOnly {
+			root.Usage()
+			os.Exit(0)
+		}
+
 	}
 
-	if *versionOnly {
-		le.Printf("tkey-mgmt %s", version)
-		os.Exit(0)
-	}
+	switch os.Args[1] {
+	case cmdStart.name:
+		if err := cmdStartFlags.Parse(os.Args[2:]); err != nil {
+			le.Printf("Error parsing input arguments: %v\n", err)
+			os.Exit(2)
+		}
 
-	if helpOnly {
-		pflag.Usage()
-		os.Exit(0)
-	}
+		if helpOnly {
+			cmdStartFlags.Usage()
+			os.Exit(0)
+		}
 
-	if fileName == "" {
-		le.Printf("Please pass an app binary FILE.\n\n")
-	}
+		if cmdStartFlags.NArg() > 1 {
+			le.Printf("Unexpected argument: %s\n\n", strings.Join(os.Args[2:], " "))
+			cmdStartFlags.Usage()
+			os.Exit(2)
+		}
 
-	if startFromFlash {
 		err := StartAppFlash(devPath, speed)
 		if err != nil {
 			le.Printf("StartAppFlash failed: %v\n", err)
@@ -94,15 +154,37 @@ running some app.`, os.Args[0])
 		}
 
 		le.Printf("App started from flash\n")
+
 		os.Exit(0)
+	case cmdInstall.name:
+		if err := cmdInstallFlags.Parse(os.Args[2:]); err != nil {
+			le.Printf("Error parsing input arguments: %v\n", err)
+			os.Exit(2)
+		}
+
+		if helpOnly {
+			cmdInstallFlags.Usage()
+			os.Exit(0)
+		}
+
+		if cmdInstallFlags.NArg() < 1 {
+			le.Printf("Missing path to app.\n\n")
+			cmdInstallFlags.Usage()
+			os.Exit(2)
+		} else if cmdInstallFlags.NArg() > 1 {
+			le.Printf("Unexpected argument: %s\n\n", strings.Join(cmdInstallFlags.Args()[1:], " "))
+			cmdInstallFlags.Usage()
+			os.Exit(2)
+		}
+
+		appPath = cmdInstallFlags.Args()[0]
+		fmt.Printf("appPath: %v\n", appPath)
+
+		os.Exit(0)
+	default:
+		root.Usage()
+		le.Printf("%q is not a valid subcommand.\n", os.Args[1])
+		os.Exit(2)
 	}
-
-	_, err := LoadMgmtApp(devPath, speed, fileUSS, enterUSS)
-	if err != nil {
-		le.Printf("Error: loadMgmtApp: %v", err)
-		os.Exit(1)
-	}
-
-	os.Exit(0)
-
+	os.Exit(1) // should never be reached
 }
