@@ -1,5 +1,5 @@
 .PHONY: all
-all: apps runtimer
+all: apps runtimer tkey-mgmt
 
 DESTDIR=/
 PREFIX=/usr/local
@@ -28,9 +28,14 @@ apps:
 runtimer:
 	go build ./cmd/runtimer
 
+.PHONY: tkey-mgmt
+tkey-mgmt:
+	go build -ldflags "-w -X main.version=$(TKEY_RUNAPP_VERSION) -buildid=" -trimpath ./cmd/tkey-mgmt
+
 .PHONY: clean
 clean:
 	rm -f runtimer
+	rm -f tkey-mgmt
 	$(MAKE) -C apps clean
 
 .PHONY: lint
