@@ -88,7 +88,7 @@ bool unregister_mgmt()
 {
 	syscall_t sys_ctx;
 	sys_ctx.syscall_no = MGMT_APP_UNREGISTER;
-	bool ret = syscall(&sys_ctx);
+	int ret = syscall(&sys_ctx);
 
 	qemu_puts("MGMT_APP_UNREGISTER: ");
 	qemu_putinthex(ret);
@@ -105,11 +105,11 @@ int preload_store(struct context *ctx, uint32_t size)
 	sys_ctx.size = size;
 	sys_ctx.data = ctx->loadaddr;
 
-	bool ret = syscall(&sys_ctx);
+	int ret = syscall(&sys_ctx);
 
 	ctx->offset += size;
 
-	qemu_puts("PRELOAD_STORE: ");
+	qemu_puts("PRELOAD_STORE: offset: ");
 	qemu_putinthex(sys_ctx.offset);
 	qemu_lf();
 	qemu_puts("ret: ");
@@ -127,7 +127,7 @@ int preload_store_finalize(struct context *ctx)
 	sys_ctx.size = ctx->app_size;
 	sys_ctx.data = ctx->uss;
 
-	bool ret = syscall(&sys_ctx);
+	int ret = syscall(&sys_ctx);
 
 	qemu_puts("PRELOAD_STORE_FINALIZE: ");
 	qemu_puts("ret: ");
@@ -149,16 +149,6 @@ int preload_delete()
 	qemu_lf();
 
 	return ret;
-}
-
-static void copy_name(uint8_t *buf, const size_t bufsiz, const uint32_t word)
-{
-	assert(bufsiz >= 4);
-
-	buf[0] = word >> 24;
-	buf[1] = word >> 16;
-	buf[2] = word >> 8;
-	buf[3] = word;
 }
 
 // read_command takes a frame header and a command to fill in after
@@ -210,6 +200,8 @@ static enum state initial_commands(const struct frame_header *hdr,
 				   struct context *ctx)
 {
 	uint8_t rsp[CMDLEN_MAXBYTES] = {0};
+	size_t rsp_left =
+	    CMDLEN_MAXBYTES; // How many bytes left in response buf
 
 	switch (cmd[0]) {
 	case CMD_NAME_VERSION:
@@ -220,9 +212,13 @@ static enum state initial_commands(const struct frame_header *hdr,
 			break;
 		}
 
-		copy_name(rsp, CMDLEN_MAXBYTES, (uint32_t)app_name0);
-		copy_name(&rsp[4], CMDLEN_MAXBYTES - 4, (uint32_t)app_name1);
-		wordcpy_s(&rsp[8], CMDLEN_MAXBYTES / 4 - 2, &app_version, 1);
+		memcpy_s(rsp, rsp_left, app_name0, sizeof(app_name0));
+		rsp_left -= sizeof(app_name0);
+
+		memcpy_s(&rsp[4], rsp_left, app_name1, sizeof(app_name1));
+		rsp_left -= sizeof(app_name1);
+
+		memcpy_s(&rsp[8], rsp_left, &app_version, sizeof(app_version));
 
 		app_reply(*hdr, RSP_NAME_VERSION, rsp);
 		// still initial state
@@ -253,13 +249,20 @@ static enum state initial_commands(const struct frame_header *hdr,
 			break;
 		}
 
+		ctx->app_size = local_app_size;
 		ctx->left = local_app_size;
+		ctx->count = 0;
 
 		// Do we have a USS at all?
 		if (cmd[5] != 0) {
 			// Yes
 			ctx->use_uss = true;
 			memcpy_s(ctx->uss, 32, &cmd[6], 32);
+		}
+
+		// temp att this location
+		if (preload_delete() != 0) {
+			qemu_puts("preload_delete failed\n");
 		}
 
 		rsp[0] = STATUS_OK;
@@ -330,6 +333,9 @@ static enum state initial_commands(const struct frame_header *hdr,
 		app_reply(*hdr, RSP_DELETE_APP, rsp);
 		// still initial state
 	}
+	case CMD_FW_PROBE:
+		/* Allow fw probe */
+		break;
 
 	default:
 		qemu_puts("Got unknown cmd: 0x");
@@ -410,15 +416,18 @@ static enum state loading_commands(const struct frame_header *hdr,
 				break;
 			}
 
-			// TODO: implement digest check, and send to client
-			/*int digest_err = compute_app_digest(ctx->digest);*/
+			// TODO: implement digest check, and send to
+			// client
+			/*int digest_err =
+			 * compute_app_digest(ctx->digest);*/
 			/*assert(digest_err == 0);*/
 			/*print_digest(ctx->digest);*/
 
 			// And return the digest in final
 			// response
 			rsp[0] = STATUS_OK;
-			/*memcpy_s(&rsp[1], CMDLEN_MAXBYTES - 1, ctx->digest,*/
+			/*memcpy_s(&rsp[1], CMDLEN_MAXBYTES - 1,
+			 * ctx->digest,*/
 			/*	 32);*/
 			app_reply(*hdr, RSP_LOAD_APP_DATA_READY, rsp);
 
@@ -454,6 +463,13 @@ int main(void)
 	ctx.loadaddr = app_buf;
 	ctx.count = 0;
 	ctx.use_uss = false;
+
+	// Register as a management app
+	if (register_mgmt() != 0) {
+		qemu_puts("Failed to register as mgmt app\n");
+		assert(1 == 2);
+	}
+	qemu_puts("Registered as mgmt app\n");
 
 	for (;;) {
 		switch (state) {
