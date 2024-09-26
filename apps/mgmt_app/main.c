@@ -28,6 +28,7 @@ enum syscall_cmd {
 	WRITE_DATA,
 	READ_DATA,
 	PRELOAD_STORE,
+	PRELOAD_STORE_FINALIZE,
 	PRELOAD_DELETE,
 	MGMT_APP_REGISTER,
 	MGMT_APP_UNREGISTER,
@@ -48,11 +49,14 @@ const uint32_t app_version = 0x00000001;
 
 // Context for the loading of a TKey program
 struct context {
-	uint32_t left;	    // Bytes left to receive
-	uint32_t count;	    // Bytes in buffer before write
+	uint32_t left; // Bytes left to receive of app
+	uint32_t
+	    count; // Number of bytes in *loadaddr buffer before a flash write
+	uint32_t app_size;  // Total app size in bytes
 	uint32_t offset;    // Offset to write to in flash
 	uint8_t digest[32]; // Program digest
-	uint8_t *loadaddr;  // Where we are currently loading a TKey program
+	uint8_t *loadaddr;  // Buffer to store the app chunks in, points to the
+			    // start address
 	bool use_uss;	    // Use USS?
 	uint8_t uss[32];    // User Supplied Secret, if any
 };
@@ -108,6 +112,24 @@ int preload_store(struct context *ctx, uint32_t size)
 	qemu_puts("PRELOAD_STORE: ");
 	qemu_putinthex(sys_ctx.offset);
 	qemu_lf();
+	qemu_puts("ret: ");
+	qemu_putinthex(ret);
+	qemu_lf();
+
+	return ret;
+}
+
+int preload_store_finalize(struct context *ctx)
+{
+	syscall_t sys_ctx;
+	sys_ctx.syscall_no = PRELOAD_STORE_FINALIZE;
+	sys_ctx.offset = (uint32_t)ctx->use_uss; // temporary
+	sys_ctx.size = ctx->app_size;
+	sys_ctx.data = ctx->uss;
+
+	bool ret = syscall(&sys_ctx);
+
+	qemu_puts("PRELOAD_STORE_FINALIZE: ");
 	qemu_puts("ret: ");
 	qemu_putinthex(ret);
 	qemu_lf();
@@ -246,6 +268,7 @@ static enum state initial_commands(const struct frame_header *hdr,
 		state = STATE_LOADING;
 		break;
 	}
+
 	case CMD_UNREGISTER_MGMT_APP: {
 		qemu_puts("cmd: unregister mgmt app\n");
 		if (hdr->len != 1) {
@@ -254,15 +277,14 @@ static enum state initial_commands(const struct frame_header *hdr,
 			break;
 		}
 
-		int ret = unregister_mgmt();
-
-		if (ret == 0) {
-			rsp[0] = STATUS_OK;
+		if (unregister_mgmt() != 0) {
+			rsp[0] = STATUS_BAD;
 			app_reply(*hdr, RSP_UNREGISTER_MGMT_APP, rsp);
 			// still initial state
 			break;
 		}
-		rsp[0] = STATUS_BAD;
+
+		rsp[0] = STATUS_OK;
 		app_reply(*hdr, RSP_UNREGISTER_MGMT_APP, rsp);
 		// still initial state
 		break;
@@ -276,15 +298,14 @@ static enum state initial_commands(const struct frame_header *hdr,
 			break;
 		}
 
-		int ret = register_mgmt();
-
-		if (ret == 0) {
-			rsp[0] = STATUS_OK;
+		if (register_mgmt() != 0) {
+			rsp[0] = STATUS_BAD;
 			app_reply(*hdr, RSP_REGISTER_MGMT_APP, rsp);
 			// still initial state
 			break;
 		}
-		rsp[0] = STATUS_BAD;
+
+		rsp[0] = STATUS_OK;
 		app_reply(*hdr, RSP_REGISTER_MGMT_APP, rsp);
 		// still initial state
 		break;
@@ -298,18 +319,16 @@ static enum state initial_commands(const struct frame_header *hdr,
 			break;
 		}
 
-		int ret = preload_delete();
-
-		if (ret == 0) {
-			rsp[0] = STATUS_OK;
+		if (preload_delete() != 0) {
+			rsp[0] = STATUS_BAD;
 			app_reply(*hdr, RSP_DELETE_APP, rsp);
 			// still initial state
 			break;
 		}
-		rsp[0] = STATUS_BAD;
+
+		rsp[0] = STATUS_OK;
 		app_reply(*hdr, RSP_DELETE_APP, rsp);
 		// still initial state
-		break;
 	}
 
 	default:
@@ -353,7 +372,14 @@ static enum state loading_commands(const struct frame_header *hdr,
 		if (ctx->count >= 4096) {
 
 			// write one 4K page to flash
-			preload_store(ctx, 4096);
+			if (preload_store(ctx, 4096) != 0) {
+				qemu_puts("preload_store failed\n");
+
+				rsp[0] = STATUS_BAD;
+				app_reply(*hdr, RSP_LOAD_APP_DATA, rsp);
+				state = STATE_FAIL;
+				break;
+			}
 
 			// rearrange the buffer
 			int left_in_buf = ctx->count - 4096;
@@ -375,7 +401,14 @@ static enum state loading_commands(const struct frame_header *hdr,
 				preload_store(ctx, ctx->count);
 			}
 
+			if (preload_store_finalize(ctx) != 0) {
+				qemu_puts("preload_*_finalize failed\n");
 
+				rsp[0] = STATUS_BAD;
+				app_reply(*hdr, RSP_LOAD_APP_DATA_READY, rsp);
+				state = STATE_FAIL;
+				break;
+			}
 
 			// TODO: implement digest check, and send to client
 			/*int digest_err = compute_app_digest(ctx->digest);*/
