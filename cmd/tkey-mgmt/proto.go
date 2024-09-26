@@ -8,20 +8,27 @@ import (
 
 	"github.com/tillitis/tkeyclient"
 	"github.com/tillitis/tkeyutil"
+
+	"golang.org/x/crypto/blake2s"
 )
 
 var (
 	cmdGetNameVersion    = appCmd{0x01, "cmdGetNameVersion", tkeyclient.CmdLen1}
 	rspGetNameVersion    = appCmd{0x02, "rspGetNameVersion", tkeyclient.CmdLen32}
-	cmdLoadApp           = appCmd{0x03, "cmdLoadApp", tkeyclient.CmdLen4}
+	cmdLoadApp           = appCmd{0x03, "cmdLoadApp", tkeyclient.CmdLen128} // fel längd!
 	rspLoadApp           = appCmd{0x04, "rspLoadApp", tkeyclient.CmdLen4}
 	cmdLoadAppData       = appCmd{0x05, "cmdLoadAppData", tkeyclient.CmdLen128}
 	rspLoadAppData       = appCmd{0x06, "rspLoadAppData", tkeyclient.CmdLen4}
-	cmdLoadAppDataReady  = appCmd{0x07, "cmdLoadAppDataReady", tkeyclient.CmdLen128}
-	cmdLoadAppFlash      = appCmd{0xf0, "cmdGetNameVersion", tkeyclient.CmdLen1}
-	rspLoadAppFlash      = appCmd{0xf1, "rspGetNameVersion", tkeyclient.CmdLen1}
-	cmdUnregisterMgmtApp = appCmd{0xf2, "cmdLoadApp", tkeyclient.CmdLen1}
-	rspUnregisterMgmtApp = appCmd{0xf3, "rspLoadApp", tkeyclient.CmdLen1}
+	rspLoadAppDataReady  = appCmd{0x07, "rspLoadAppDataReady", tkeyclient.CmdLen128}
+	cmdDeleteApp         = appCmd{0x08, "cmdLoadApp", tkeyclient.CmdLen1}
+	rspDeleteApp         = appCmd{0x09, "rspLoadApp", tkeyclient.CmdLen1}
+	cmdRegisterMgmtApp   = appCmd{0x0a, "cmdLoadApp", tkeyclient.CmdLen1}
+	rspRegisterMgmtApp   = appCmd{0x0b, "rspLoadApp", tkeyclient.CmdLen1}
+	cmdUnregisterMgmtApp = appCmd{0x0c, "cmdLoadApp", tkeyclient.CmdLen1}
+	rspUnregisterMgmtApp = appCmd{0x0d, "rspLoadApp", tkeyclient.CmdLen1}
+
+	cmdLoadAppFlash = appCmd{0xf0, "cmdGetNameVersion", tkeyclient.CmdLen1}
+	rspLoadAppFlash = appCmd{0xf1, "rspGetNameVersion", tkeyclient.CmdLen1}
 
 	// Commands to fw
 	cmdStartAppFlash = fwCmd{0xF0, "cmdStartAppFlash", tkeyclient.CmdLen1}
@@ -134,7 +141,7 @@ func (m Mgmt) GetAppNameVersion() (*tkeyclient.NameVersion, error) {
 	return nameVer, nil
 }
 
-func LoadMgmtApp(devPath string, speed int, fileUSS string, enterUSS bool) (*tkeyclient.TillitisKey, error) {
+func LoadMgmtApp(devPath string, speed int, fileUSS string, enterUSS bool) (*Mgmt, error) {
 	if !verbose {
 		tkeyclient.SilenceLogging()
 	}
@@ -190,7 +197,14 @@ func LoadMgmtApp(devPath string, speed int, fileUSS string, enterUSS bool) (*tke
 		}
 	}
 
-	return tk, nil
+	mgmtApp := New(tk)
+
+	if !isWantedApp(mgmtApp) {
+		mgmtApp.Close()
+		return nil, fmt.Errorf("no TKey on the serial port, or it's running wrong app (and is not in firmware mode)")
+	}
+
+	return &mgmtApp, nil
 }
 
 // StartAppFlash sends a command to fw to start the preloaded app, if any
@@ -219,11 +233,11 @@ func StartAppFlash(devPath string, speed int) error {
 
 	nameVer, err := tk.GetNameVersion()
 	if err != nil {
-		le.Printf("GetNameVersion failed: %v\n", err)
 		le.Printf("If the serial port is correct, then the TKey might not be in firmware-\n" +
 			"mode, and have an app running already. Please unplug and plug it in again.\n")
 		return fmt.Errorf("GetNameVersion failed: %w\n", err)
 	}
+
 	le.Printf("Firmware name0:'%s' name1:'%s' version:%d\n",
 		nameVer.Name0, nameVer.Name1, nameVer.Version)
 
@@ -252,4 +266,158 @@ func StartAppFlash(devPath string, speed int) error {
 	}
 
 	return nil
+}
+
+func (m Mgmt) InstallApp(bin []byte, secretPhrase []byte) error {
+
+	binLen := len(bin)
+	if binLen > 100*1024 { // TK1_APP_MAX_SIZE
+		return fmt.Errorf("File too big")
+	}
+
+	le.Printf("app size: %v, 0x%x, 0b%b\n", binLen, binLen, binLen)
+
+	err := m.installApp(binLen, secretPhrase)
+	if err != nil {
+		return err
+	}
+
+	// Load the file
+	var offset int
+	var deviceDigest [32]byte
+
+	for nsent := 0; offset < binLen; offset += nsent {
+		if binLen-offset <= cmdLoadAppData.CmdLen().Bytelen()-1 {
+			deviceDigest, nsent, err = m.installAppData(bin[offset:], true)
+		} else {
+			_, nsent, err = m.installAppData(bin[offset:], false)
+		}
+		if err != nil {
+			return fmt.Errorf("loadAppData: %w", err)
+		}
+	}
+	if offset > binLen {
+		return fmt.Errorf("transmitted more than expected")
+	}
+
+	// TODO: Add checking of the digest
+
+	// digest := blake2s.Sum256(bin)
+	//
+	// le.Printf("Digest from host:\n")
+	// printDigest(digest)
+	le.Printf("Digest from device:\n")
+	printDigest(deviceDigest)
+	//
+	// if deviceDigest != digest {
+	// 	return fmt.Errorf("Different digests")
+	// }
+	// le.Printf("Same digests!\n")
+
+	// The app has now started automatically.
+	return nil
+}
+
+// loadApp sets the size and USS of the app to be loaded into the TKey.
+func (m Mgmt) installApp(size int, secretPhrase []byte) error {
+	id := 2
+	tx, err := tkeyclient.NewFrameBuf(cmdLoadApp, id)
+	if err != nil {
+		return err
+	}
+
+	// Set size
+	tx[2] = byte(size)
+	tx[3] = byte(size >> 8)
+	tx[4] = byte(size >> 16)
+	tx[5] = byte(size >> 24)
+
+	if len(secretPhrase) == 0 {
+		tx[6] = 0
+	} else {
+		tx[6] = 1
+		// Hash user's phrase as USS
+		uss := blake2s.Sum256(secretPhrase)
+		copy(tx[6:], uss[:])
+	}
+
+	tkeyclient.Dump("LoadApp tx", tx)
+	if err = m.tk.Write(tx); err != nil {
+		return err
+	}
+
+	rx, _, err := m.tk.ReadFrame(rspLoadApp, id)
+	if err != nil {
+		return fmt.Errorf("ReadFrame: %w", err)
+	}
+
+	if rx[2] != tkeyclient.StatusOK {
+		return fmt.Errorf("LoadApp NOK")
+	}
+
+	return nil
+}
+
+// loadAppData loads a chunk of the raw app binary into the TKey.
+func (m Mgmt) installAppData(content []byte, last bool) ([32]byte, int, error) {
+	id := 2
+	tx, err := tkeyclient.NewFrameBuf(cmdLoadAppData, id)
+	if err != nil {
+		return [32]byte{}, 0, err
+	}
+
+	payload := make([]byte, cmdLoadAppData.CmdLen().Bytelen()-1)
+	copied := copy(payload, content)
+
+	// Add padding if not filling the payload buffer.
+	if copied < len(payload) {
+		padding := make([]byte, len(payload)-copied)
+		copy(payload[copied:], padding)
+	}
+
+	copy(tx[2:], payload)
+
+	tkeyclient.Dump("LoadAppData tx", tx)
+
+	if err = m.tk.Write(tx); err != nil {
+		return [32]byte{}, 0, err
+	}
+
+	var rx []byte
+	var expectedResp appCmd
+
+	if last {
+		expectedResp = rspLoadAppDataReady
+	} else {
+		expectedResp = rspLoadAppData
+	}
+
+	// Wait for reply
+	rx, _, err = m.tk.ReadFrame(expectedResp, id)
+	if err != nil {
+		return [32]byte{}, 0, fmt.Errorf("ReadFrame: %w", err)
+	}
+
+	if rx[2] != tkeyclient.StatusOK {
+		return [32]byte{}, 0, fmt.Errorf("LoadAppData NOK")
+	}
+
+	if last {
+		var digest [32]byte
+		copy(digest[:], rx[3:])
+		return digest, copied, nil
+	}
+
+	return [32]byte{}, copied, nil
+}
+
+func printDigest(md [32]byte) {
+	digest := ""
+	for j := 0; j < 4; j++ {
+		for i := 0; i < 8; i++ {
+			digest += fmt.Sprintf("%02x", md[i+8*j])
+		}
+		digest += " "
+	}
+	le.Printf(digest + "\n")
 }

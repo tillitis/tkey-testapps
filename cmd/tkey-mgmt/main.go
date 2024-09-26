@@ -97,6 +97,7 @@ Sends a command to the connected TKey to start the preloaded app.`, os.Args[0])
 		"Enable typing of a phrase to be hashed as the User Supplied Secret. The USS is loaded onto the TKey along with the app itself and used by the firmware, together with other material, for deriving secrets for the application.")
 	cmdInstallFlags.StringVar(&fileUSS, "uss-file", "",
 		"Read `FILE` and hash its contents as the USS. Use '-' (dash) to read from stdin. The full contents are hashed unmodified (e.g. newlines are not stripped).")
+	cmdInstallFlags.BoolVar(&verbose, "verbose", false, "Enable verbose output.")
 	cmdInstallFlags.BoolVar(&helpOnly, "help", false, "Output this help.")
 	cmdInstallFlags.Usage = func() {
 		desc := fmt.Sprintf(`Usage: %[1]s [flags...] <app> 
@@ -179,6 +180,26 @@ Installs the specified app on the connected TKey.`, os.Args[0])
 
 		appPath = cmdInstallFlags.Args()[0]
 		fmt.Printf("appPath: %v\n", appPath)
+
+		m, err := LoadMgmtApp(devPath, speed, fileUSS, enterUSS)
+		if err != nil {
+			le.Printf("Error: LoadMgmtApp: %v\n", err)
+			os.Exit(1)
+		}
+
+		appBin, err := os.ReadFile(appPath)
+		if err != nil {
+			le.Printf("Failed to read file: %v\n", err)
+			os.Exit(1)
+		}
+
+		// TODO: Add uss handling
+		err = m.InstallApp([]byte(appBin), nil)
+		if err != nil {
+			le.Printf("Error: InstallApp: %v\n", err)
+			le.Printf("Failed to install app, either not a registered Management app, or there is already an installed app.\n")
+			os.Exit(1)
+		}
 
 		os.Exit(0)
 	default:
