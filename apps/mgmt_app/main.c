@@ -268,6 +268,50 @@ static enum state initial_commands(const struct frame_header *hdr,
 		break;
 	}
 
+	case CMD_REGISTER_MGMT_APP: {
+		qemu_puts("cmd: register mgmt app\n");
+		if (hdr->len != 1) {
+			// Bad length
+			state = STATE_FAIL;
+			break;
+		}
+
+		int ret = register_mgmt();
+
+		if (ret == 0) {
+			rsp[0] = STATUS_OK;
+			app_reply(*hdr, RSP_REGISTER_MGMT_APP, rsp);
+			// still initial state
+			break;
+		}
+		rsp[0] = STATUS_BAD;
+		app_reply(*hdr, RSP_REGISTER_MGMT_APP, rsp);
+		// still initial state
+		break;
+	}
+
+	case CMD_DELETE_APP: {
+		qemu_puts("cmd: delete app\n");
+		if (hdr->len != 1) {
+			// Bad length
+			state = STATE_FAIL;
+			break;
+		}
+
+		int ret = preload_delete();
+
+		if (ret == 0) {
+			rsp[0] = STATUS_OK;
+			app_reply(*hdr, RSP_DELETE_APP, rsp);
+			// still initial state
+			break;
+		}
+		rsp[0] = STATUS_BAD;
+		app_reply(*hdr, RSP_DELETE_APP, rsp);
+		// still initial state
+		break;
+	}
+
 	default:
 		qemu_puts("Got unknown cmd: 0x");
 		qemu_puthex(cmd[0]);
@@ -331,6 +375,8 @@ static enum state loading_commands(const struct frame_header *hdr,
 				preload_store(ctx, ctx->count);
 			}
 
+
+
 			// TODO: implement digest check, and send to client
 			/*int digest_err = compute_app_digest(ctx->digest);*/
 			/*assert(digest_err == 0);*/
@@ -375,13 +421,6 @@ int main(void)
 	ctx.loadaddr = app_buf;
 	ctx.count = 0;
 	ctx.use_uss = false;
-
-	// Register as a management app
-	if (register_mgmt()) {
-		qemu_puts("Failed to register as mgmt app\n");
-		assert(1 == 2);
-	}
-	qemu_puts("Registered as mgmt app\n");
 
 	for (;;) {
 		switch (state) {
