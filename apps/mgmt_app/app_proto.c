@@ -21,14 +21,11 @@ void app_reply(struct frame_header hdr, enum appcmd rspcode, void *buf)
 	enum cmdlen len = 0; // length covering (rspcode + length of buf)
 
 	switch (rspcode) {
-	case RSP_LOAD_APP_FLASH:
-	case RSP_UNREGISTER_MGMT_APP:
-		len = LEN_1;
-		nbytes = 1;
-		break;
-
 	case RSP_LOAD_APP:
 	case RSP_LOAD_APP_DATA:
+	case RSP_DELETE_APP:
+	case RSP_UNREGISTER_MGMT_APP:
+	case RSP_LOAD_APP_FLASH:
 		len = LEN_4;
 		nbytes = 4;
 		break;
