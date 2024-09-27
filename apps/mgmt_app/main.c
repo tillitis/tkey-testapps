@@ -13,6 +13,12 @@
 
 #include "app_proto.h"
 
+#define TK1_MMIO_TK1_SYSTEM_RESET 0xff0001C0
+
+// clang-format off
+static volatile uint32_t *const sys_reset = (volatile uint32_t *)TK1_MMIO_TK1_SYSTEM_RESET;
+// clang-format on
+
 typedef struct {
 	uint8_t syscall_no;
 	uint32_t offset;
@@ -260,11 +266,6 @@ static enum state initial_commands(const struct frame_header *hdr,
 			memcpy_s(ctx->uss, 32, &cmd[6], 32);
 		}
 
-		// temp att this location
-		if (preload_delete() != 0) {
-			qemu_puts("preload_delete failed\n");
-		}
-
 		rsp[0] = STATUS_OK;
 		app_reply(*hdr, RSP_LOAD_APP, rsp);
 
@@ -412,7 +413,7 @@ static enum state loading_commands(const struct frame_header *hdr,
 
 				rsp[0] = STATUS_BAD;
 				app_reply(*hdr, RSP_LOAD_APP_DATA_READY, rsp);
-				state = STATE_FAIL;
+				state = STATE_INITIAL;
 				break;
 			}
 
@@ -489,9 +490,11 @@ int main(void)
 			}
 
 			state = loading_commands(&hdr, cmd, state, &ctx);
+			break;
 
 		case STATE_RUN:
 			// Force a reset to authenticate app
+			*sys_reset = 1;
 			break;
 
 		case STATE_FAIL:
