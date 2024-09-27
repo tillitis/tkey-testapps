@@ -25,6 +25,7 @@ void app_reply(struct frame_header hdr, enum appcmd rspcode, void *buf)
 	case RSP_LOAD_APP_DATA:
 	case RSP_DELETE_APP:
 	case RSP_UNREGISTER_MGMT_APP:
+	case RSP_REGISTER_MGMT_APP:
 	case RSP_LOAD_APP_FLASH:
 		len = LEN_4;
 		nbytes = 4;

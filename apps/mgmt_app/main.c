@@ -465,13 +465,6 @@ int main(void)
 	ctx.count = 0;
 	ctx.use_uss = false;
 
-	// Register as a management app
-	if (register_mgmt() != 0) {
-		qemu_puts("Failed to register as mgmt app\n");
-		assert(1 == 2);
-	}
-	qemu_puts("Registered as mgmt app\n");
-
 	for (;;) {
 		switch (state) {
 		case STATE_INITIAL:
