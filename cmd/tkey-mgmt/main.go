@@ -31,15 +31,16 @@ type cmd struct {
 }
 
 var (
-	cmdStart   = cmd{0, "start"}
-	cmdInstall = cmd{1, "install"}
-	cmdDelete  = cmd{2, "delete"}
+	cmdStart    = cmd{0, "start"}
+	cmdInstall  = cmd{1, "install"}
+	cmdDelete   = cmd{2, "delete"}
+	cmdRegister = cmd{3, "register"}
 )
 
 func main() {
 	var appPath, devPath, fileUSS string
 	var speed int
-	var enterUSS, helpOnly, overwrite bool
+	var enterUSS, helpOnly, overwrite, unRegister bool
 
 	if version == "" {
 		version = readBuildInfo()
@@ -62,6 +63,7 @@ Commands:
   start       Starts an already installed app
   install     Install the specified app
   delete      Remove an already stored app
+  register    Handle registration of an management app
 
 Use <command> --help for further help, i.e. %[1]s verify --help
 
@@ -114,20 +116,46 @@ Installs the specified app on the connected TKey.`, os.Args[0])
 	}
 
 	// Flags for the command cmdDelete
-	cmdDeleteFlags := pflag.NewFlagSet(cmdInstall.name, pflag.ExitOnError)
+	cmdDeleteFlags := pflag.NewFlagSet(cmdDelete.name, pflag.ExitOnError)
 	cmdDeleteFlags.SortFlags = false
 	cmdDeleteFlags.StringVar(&devPath, "port", "",
 		"Set serial port device `PATH`. If this is not passed, auto-detection will be attempted.")
 	cmdDeleteFlags.IntVar(&speed, "speed", tkeyclient.SerialSpeed,
 		"Set serial port speed in `BPS` (bits per second).")
+	cmdDeleteFlags.BoolVar(&enterUSS, "uss", false,
+		"Enable typing of a phrase to be hashed as the User Supplied Secret. The USS is loaded onto the TKey along with the app itself and used by the firmware, together with other material, for deriving secrets for the application.")
+	cmdDeleteFlags.StringVar(&fileUSS, "uss-file", "",
+		"Read `FILE` and hash its contents as the USS. Use '-' (dash) to read from stdin. The full contents are hashed unmodified (e.g. newlines are not stripped).")
 	cmdDeleteFlags.BoolVar(&verbose, "verbose", false, "Enable verbose output.")
 	cmdDeleteFlags.BoolVar(&helpOnly, "help", false, "Output this help.")
 	cmdDeleteFlags.Usage = func() {
-		desc := fmt.Sprintf(`Usage: %[1]s [flags...] <app> 
+		desc := fmt.Sprintf(`Usage: %[1]s [flags...]
 
-Removes an already instaleld app.`, os.Args[0])
+Removes an already installed app.`, os.Args[0])
 		le.Printf("%s\n\n%s", desc,
 			cmdDeleteFlags.FlagUsagesWrapped(86))
+	}
+
+	// Flags for the command cmdRegister
+	cmdRegisterFlags := pflag.NewFlagSet(cmdRegister.name, pflag.ExitOnError)
+	cmdRegisterFlags.SortFlags = false
+	cmdRegisterFlags.BoolVarP(&unRegister, "unregister", "u", false, "Unregister the embedded device Management app.")
+	cmdRegisterFlags.StringVar(&devPath, "port", "",
+		"Set serial port device `PATH`. If this is not passed, auto-detection will be attempted.")
+	cmdRegisterFlags.IntVar(&speed, "speed", tkeyclient.SerialSpeed,
+		"Set serial port speed in `BPS` (bits per second).")
+	cmdRegisterFlags.BoolVar(&enterUSS, "uss", false,
+		"Enable typing of a phrase to be hashed as the User Supplied Secret. The USS is loaded onto the TKey along with the app itself and used by the firmware, together with other material, for deriving secrets for the application.")
+	cmdRegisterFlags.StringVar(&fileUSS, "uss-file", "",
+		"Read `FILE` and hash its contents as the USS. Use '-' (dash) to read from stdin. The full contents are hashed unmodified (e.g. newlines are not stripped).")
+	cmdRegisterFlags.BoolVar(&verbose, "verbose", false, "Enable verbose output.")
+	cmdRegisterFlags.BoolVar(&helpOnly, "help", false, "Output this help.")
+	cmdRegisterFlags.Usage = func() {
+		desc := fmt.Sprintf(`Usage: %[1]s [flags...]
+
+Registers the embedded device app as a Management app.`, os.Args[0])
+		le.Printf("%s\n\n%s", desc,
+			cmdRegisterFlags.FlagUsagesWrapped(86))
 	}
 
 	// No arguments, print and exit
@@ -270,6 +298,48 @@ Removes an already instaleld app.`, os.Args[0])
 
 		}
 		le.Printf("Installed app deleted\n")
+		os.Exit(0)
+
+	case cmdRegister.name:
+		if err := cmdRegisterFlags.Parse(os.Args[2:]); err != nil {
+			le.Printf("Error parsing input arguments: %v\n", err)
+			os.Exit(2)
+		}
+
+		if helpOnly {
+			cmdRegisterFlags.Usage()
+			os.Exit(0)
+		}
+
+		if cmdRegisterFlags.NArg() > 1 {
+			le.Printf("Unexpected argument: %s\n\n", strings.Join(os.Args[2:], " "))
+			cmdRegisterFlags.Usage()
+			os.Exit(2)
+		}
+
+		m, err := LoadMgmtApp(devPath, speed, fileUSS, enterUSS)
+		if err != nil {
+			le.Printf("Error: LoadMgmtApp: %v\n", err)
+			os.Exit(1)
+		}
+
+		err = m.RegisterMgmtApp(unRegister)
+		if err != nil {
+			le.Printf("Error: RegisterMgmtApp: %v\n", err)
+			if unRegister {
+				le.Printf("This app is not registered as a Management app, and hence cannot remove a management app\n")
+			} else {
+				le.Printf("There is already another registered management app\n")
+			}
+
+			os.Exit(1)
+		}
+
+		if unRegister {
+			le.Printf("Management unregistered\n")
+		} else {
+			le.Printf("Management registered\n")
+		}
 		os.Exit(0)
 
 	default:

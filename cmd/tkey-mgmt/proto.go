@@ -296,6 +296,42 @@ func (m Mgmt) DeleteInstalledApp() error {
 	return nil
 }
 
+// RegisterMgmtApp sends a command to register the already loaded app as a management app
+func (m Mgmt) RegisterMgmtApp(unregister bool) error {
+
+	var cmd, rsp appCmd
+	if unregister {
+		cmd = cmdUnregisterMgmtApp
+		rsp = rspUnregisterMgmtApp
+	} else {
+		cmd = cmdRegisterMgmtApp
+		rsp = rspRegisterMgmtApp
+	}
+	id := 2
+	tx, err := tkeyclient.NewFrameBuf(cmd, id)
+	if err != nil {
+		return err
+	}
+
+	tkeyclient.Dump("RegisterMgmtApp tx", tx)
+
+	if err = m.tk.Write(tx); err != nil {
+		return err
+	}
+
+	// Wait for reply
+	rx, _, err := m.tk.ReadFrame(rsp, id)
+	if err != nil {
+		return fmt.Errorf("ReadFrame: %w", err)
+	}
+
+	if rx[2] != tkeyclient.StatusOK {
+		return fmt.Errorf("RegisterMgmtApp NOK")
+	}
+
+	return nil
+}
+
 func (m Mgmt) InstallApp(bin []byte, secretPhrase []byte) error {
 
 	binLen := len(bin)
