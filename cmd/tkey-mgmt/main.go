@@ -77,6 +77,10 @@ Flags:`, os.Args[0])
 		"Set serial port device `PATH`. If this is not passed, auto-detection will be attempted.")
 	cmdStartFlags.IntVar(&speed, "speed", tkeyclient.SerialSpeed,
 		"Set serial port speed in `BPS` (bits per second).")
+	cmdStartFlags.BoolVar(&enterUSS, "uss", false,
+		"Enable typing of a phrase to be hashed as the User Supplied Secret. The USS is loaded onto the TKey along with the app itself and used by the firmware, together with other material, for deriving secrets for the application.")
+	cmdStartFlags.StringVar(&fileUSS, "uss-file", "",
+		"Read `FILE` and hash its contents as the USS. Use '-' (dash) to read from stdin. The full contents are hashed unmodified (e.g. newlines are not stripped).")
 	cmdStartFlags.BoolVar(&helpOnly, "help", false, "Output this help.")
 	cmdStartFlags.Usage = func() {
 		desc := fmt.Sprintf(`Usage: %[1]s [flags...] 
