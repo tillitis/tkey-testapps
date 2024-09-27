@@ -33,6 +33,7 @@ type cmd struct {
 var (
 	cmdStart   = cmd{0, "start"}
 	cmdInstall = cmd{1, "install"}
+	cmdDelete  = cmd{2, "delete"}
 )
 
 func main() {
@@ -59,7 +60,8 @@ Usage:
 
 Commands:
   start       Starts an already installed app
-  install     Verify signature of previously generated data
+  install     Install the specified app
+  delete      Remove an already stored app
 
 Use <command> --help for further help, i.e. %[1]s verify --help
 
@@ -105,6 +107,23 @@ Sends a command to the connected TKey to start the preloaded app.`, os.Args[0])
 Installs the specified app on the connected TKey.`, os.Args[0])
 		le.Printf("%s\n\n%s", desc,
 			cmdInstallFlags.FlagUsagesWrapped(86))
+	}
+
+	// Flags for the command cmdDelete
+	cmdDeleteFlags := pflag.NewFlagSet(cmdInstall.name, pflag.ExitOnError)
+	cmdDeleteFlags.SortFlags = false
+	cmdDeleteFlags.StringVar(&devPath, "port", "",
+		"Set serial port device `PATH`. If this is not passed, auto-detection will be attempted.")
+	cmdDeleteFlags.IntVar(&speed, "speed", tkeyclient.SerialSpeed,
+		"Set serial port speed in `BPS` (bits per second).")
+	cmdDeleteFlags.BoolVar(&verbose, "verbose", false, "Enable verbose output.")
+	cmdDeleteFlags.BoolVar(&helpOnly, "help", false, "Output this help.")
+	cmdDeleteFlags.Usage = func() {
+		desc := fmt.Sprintf(`Usage: %[1]s [flags...] <app> 
+
+Removes an already instaleld app.`, os.Args[0])
+		le.Printf("%s\n\n%s", desc,
+			cmdDeleteFlags.FlagUsagesWrapped(86))
 	}
 
 	// No arguments, print and exit
@@ -179,7 +198,6 @@ Installs the specified app on the connected TKey.`, os.Args[0])
 		}
 
 		appPath = cmdInstallFlags.Args()[0]
-		fmt.Printf("appPath: %v\n", appPath)
 
 		m, err := LoadMgmtApp(devPath, speed, fileUSS, enterUSS)
 		if err != nil {
@@ -187,6 +205,19 @@ Installs the specified app on the connected TKey.`, os.Args[0])
 			os.Exit(1)
 		}
 
+		// TODO: Maybe add an "are you sure?" question here.
+		if overwrite {
+			le.Printf("Deleting installed app\n")
+			err = m.DeleteInstalledApp()
+			if err != nil {
+				le.Printf("Error: DeleteInstalledApp: %v\n", err)
+				le.Printf("Either there is no app to delete, or you don't have permission to do so.\n")
+				os.Exit(1)
+
+			}
+		}
+
+		fmt.Printf("Installing app from: %v\n", appPath)
 		appBin, err := os.ReadFile(appPath)
 		if err != nil {
 			le.Printf("Failed to read file: %v\n", err)
@@ -196,12 +227,47 @@ Installs the specified app on the connected TKey.`, os.Args[0])
 		// TODO: Add uss handling
 		err = m.InstallApp([]byte(appBin), nil)
 		if err != nil {
+			le.Printf("Failed to install app, either not a registered Management app, or there is already an installed app.\n")
 			le.Printf("Error: InstallApp: %v\n", err)
 			le.Printf("Failed to install app, either not a registered Management app, or there is already an installed app.\n")
 			os.Exit(1)
 		}
 
 		os.Exit(0)
+
+	case cmdDelete.name:
+		if err := cmdDeleteFlags.Parse(os.Args[2:]); err != nil {
+			le.Printf("Error parsing input arguments: %v\n", err)
+			os.Exit(2)
+		}
+
+		if helpOnly {
+			cmdDeleteFlags.Usage()
+			os.Exit(0)
+		}
+
+		if cmdDeleteFlags.NArg() > 1 {
+			le.Printf("Unexpected argument: %s\n\n", strings.Join(os.Args[2:], " "))
+			cmdDeleteFlags.Usage()
+			os.Exit(2)
+		}
+
+		m, err := LoadMgmtApp(devPath, speed, fileUSS, enterUSS)
+		if err != nil {
+			le.Printf("Error: LoadMgmtApp: %v\n", err)
+			os.Exit(1)
+		}
+		// TODO: Maybe add an "are you sure?" question here.
+		err = m.DeleteInstalledApp()
+		if err != nil {
+			le.Printf("Error: DeleteInstalledApp: %v\n", err)
+			le.Printf("Either there is no app to delete, or you don't have permission to do so.\n")
+			os.Exit(1)
+
+		}
+		le.Printf("Installed app deleted\n")
+		os.Exit(0)
+
 	default:
 		root.Usage()
 		le.Printf("%q is not a valid subcommand.\n", os.Args[1])

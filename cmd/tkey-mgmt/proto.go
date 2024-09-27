@@ -15,20 +15,20 @@ import (
 var (
 	cmdGetNameVersion    = appCmd{0x01, "cmdGetNameVersion", tkeyclient.CmdLen1}
 	rspGetNameVersion    = appCmd{0x02, "rspGetNameVersion", tkeyclient.CmdLen32}
-	cmdLoadApp           = appCmd{0x03, "cmdLoadApp", tkeyclient.CmdLen128} // fel längd!
+	cmdLoadApp           = appCmd{0x03, "cmdLoadApp", tkeyclient.CmdLen128}
 	rspLoadApp           = appCmd{0x04, "rspLoadApp", tkeyclient.CmdLen4}
 	cmdLoadAppData       = appCmd{0x05, "cmdLoadAppData", tkeyclient.CmdLen128}
 	rspLoadAppData       = appCmd{0x06, "rspLoadAppData", tkeyclient.CmdLen4}
 	rspLoadAppDataReady  = appCmd{0x07, "rspLoadAppDataReady", tkeyclient.CmdLen128}
-	cmdDeleteApp         = appCmd{0x08, "cmdLoadApp", tkeyclient.CmdLen1}
-	rspDeleteApp         = appCmd{0x09, "rspLoadApp", tkeyclient.CmdLen1}
-	cmdRegisterMgmtApp   = appCmd{0x0a, "cmdLoadApp", tkeyclient.CmdLen1}
-	rspRegisterMgmtApp   = appCmd{0x0b, "rspLoadApp", tkeyclient.CmdLen1}
-	cmdUnregisterMgmtApp = appCmd{0x0c, "cmdLoadApp", tkeyclient.CmdLen1}
-	rspUnregisterMgmtApp = appCmd{0x0d, "rspLoadApp", tkeyclient.CmdLen1}
+	cmdDeleteApp         = appCmd{0x08, "cmdDeleteApp", tkeyclient.CmdLen1}
+	rspDeleteApp         = appCmd{0x09, "rspDeleteApp", tkeyclient.CmdLen4}
+	cmdRegisterMgmtApp   = appCmd{0x0a, "cmdRegisterMgmtApp", tkeyclient.CmdLen1}
+	rspRegisterMgmtApp   = appCmd{0x0b, "rspRegisterMgmtApp", tkeyclient.CmdLen4}
+	cmdUnregisterMgmtApp = appCmd{0x0c, "cmdUnregisterMgmtApp", tkeyclient.CmdLen1}
+	rspUnregisterMgmtApp = appCmd{0x0d, "rspUnregisterMgmtApp", tkeyclient.CmdLen4}
 
 	cmdLoadAppFlash = appCmd{0xf0, "cmdGetNameVersion", tkeyclient.CmdLen1}
-	rspLoadAppFlash = appCmd{0xf1, "rspGetNameVersion", tkeyclient.CmdLen1}
+	rspLoadAppFlash = appCmd{0xf1, "rspGetNameVersion", tkeyclient.CmdLen4}
 
 	// Commands to fw
 	cmdStartAppFlash = fwCmd{0xF0, "cmdStartAppFlash", tkeyclient.CmdLen1}
@@ -268,6 +268,34 @@ func StartAppFlash(devPath string, speed int) error {
 	return nil
 }
 
+// DeleteInstalledApp sends a command to delete an already installed app, if any
+func (m Mgmt) DeleteInstalledApp() error {
+
+	id := 2
+	tx, err := tkeyclient.NewFrameBuf(cmdDeleteApp, id)
+	if err != nil {
+		return err
+	}
+
+	tkeyclient.Dump("DeleteApp tx", tx)
+
+	if err = m.tk.Write(tx); err != nil {
+		return err
+	}
+
+	// Wait for reply
+	rx, _, err := m.tk.ReadFrame(rspDeleteApp, id)
+	if err != nil {
+		return fmt.Errorf("ReadFrame: %w", err)
+	}
+
+	if rx[2] != tkeyclient.StatusOK {
+		return fmt.Errorf("DeleteApp NOK")
+	}
+
+	return nil
+}
+
 func (m Mgmt) InstallApp(bin []byte, secretPhrase []byte) error {
 
 	binLen := len(bin)
@@ -275,7 +303,10 @@ func (m Mgmt) InstallApp(bin []byte, secretPhrase []byte) error {
 		return fmt.Errorf("File too big")
 	}
 
-	le.Printf("app size: %v, 0x%x, 0b%b\n", binLen, binLen, binLen)
+	if verbose {
+		le.Printf("app size: %v, 0x%x, 0b%b\n", binLen, binLen, binLen)
+
+	}
 
 	err := m.installApp(binLen, secretPhrase)
 	if err != nil {
@@ -293,7 +324,7 @@ func (m Mgmt) InstallApp(bin []byte, secretPhrase []byte) error {
 			_, nsent, err = m.installAppData(bin[offset:], false)
 		}
 		if err != nil {
-			return fmt.Errorf("loadAppData: %w", err)
+			return fmt.Errorf("InstallApp: %w", err)
 		}
 	}
 	if offset > binLen {
@@ -341,7 +372,7 @@ func (m Mgmt) installApp(size int, secretPhrase []byte) error {
 		copy(tx[6:], uss[:])
 	}
 
-	tkeyclient.Dump("LoadApp tx", tx)
+	tkeyclient.Dump("installApp tx", tx)
 	if err = m.tk.Write(tx); err != nil {
 		return err
 	}
@@ -350,9 +381,10 @@ func (m Mgmt) installApp(size int, secretPhrase []byte) error {
 	if err != nil {
 		return fmt.Errorf("ReadFrame: %w", err)
 	}
+	tkeyclient.Dump("installApp rx", rx)
 
 	if rx[2] != tkeyclient.StatusOK {
-		return fmt.Errorf("LoadApp NOK")
+		return fmt.Errorf("installApp NOK")
 	}
 
 	return nil
@@ -377,7 +409,7 @@ func (m Mgmt) installAppData(content []byte, last bool) ([32]byte, int, error) {
 
 	copy(tx[2:], payload)
 
-	tkeyclient.Dump("LoadAppData tx", tx)
+	tkeyclient.Dump("installAppData tx", tx)
 
 	if err = m.tk.Write(tx); err != nil {
 		return [32]byte{}, 0, err
@@ -398,8 +430,10 @@ func (m Mgmt) installAppData(content []byte, last bool) ([32]byte, int, error) {
 		return [32]byte{}, 0, fmt.Errorf("ReadFrame: %w", err)
 	}
 
+	tkeyclient.Dump("installAppData rx", rx)
+
 	if rx[2] != tkeyclient.StatusOK {
-		return [32]byte{}, 0, fmt.Errorf("LoadAppData NOK")
+		return [32]byte{}, 0, fmt.Errorf("installAppData NOK")
 	}
 
 	if last {
