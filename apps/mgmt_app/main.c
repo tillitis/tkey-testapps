@@ -16,7 +16,8 @@
 #define TK1_MMIO_TK1_SYSTEM_RESET 0xff0001C0
 
 // clang-format off
-static volatile uint32_t *const sys_reset = (volatile uint32_t *)TK1_MMIO_TK1_SYSTEM_RESET;
+static volatile uint32_t *const sys_reset	= (volatile uint32_t *)TK1_MMIO_TK1_SYSTEM_RESET;
+static volatile uint32_t* const can_tx		= (volatile uint32_t *)TK1_MMIO_UART_TX_STATUS;
 // clang-format on
 
 typedef struct {
@@ -487,6 +488,8 @@ int main(void)
 
 		case STATE_RUN:
 			// Force a reset to authenticate app
+			while (!*can_tx) { // Make sure all bytes are flushed before the reset.
+			}
 			*sys_reset = 1;
 			break;
 
