@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <tkey/assert.h>
 #include <tkey/blake2s.h>
+#include <tkey/led.h>
 #include <tkey/lib.h>
 #include <tkey/proto.h>
 #include <tkey/qemu_debug.h>
@@ -469,6 +470,7 @@ int main(void)
 	for (;;) {
 		switch (state) {
 		case STATE_INITIAL:
+			led_set(LED_GREEN);
 			if (read_command(&hdr, cmd) == -1) {
 				state = STATE_FAIL;
 				break;
@@ -478,6 +480,7 @@ int main(void)
 			break;
 
 		case STATE_LOADING:
+			led_set(LED_RED);
 			if (read_command(&hdr, cmd) == -1) {
 				state = STATE_FAIL;
 				break;
