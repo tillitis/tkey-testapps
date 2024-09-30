@@ -35,6 +35,7 @@ enum syscall_cmd {
 	DEALLOC_AREA,
 	WRITE_DATA,
 	READ_DATA,
+	ERASE_DATA,
 	PRELOAD_STORE,
 	PRELOAD_STORE_FINALIZE,
 	PRELOAD_DELETE,
@@ -386,7 +387,7 @@ static enum state loading_commands(const struct frame_header *hdr,
 
 				rsp[0] = STATUS_BAD;
 				app_reply(*hdr, RSP_LOAD_APP_DATA, rsp);
-				state = STATE_FAIL;
+				state = STATE_INITIAL;
 				break;
 			}
 
