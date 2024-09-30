@@ -31,6 +31,7 @@ enum syscall_cmd {
 	DEALLOC_AREA,
 	WRITE_DATA,
 	READ_DATA,
+	ERASE_DATA,
 	PRELOAD_STORE,
 	PRELOAD_DELETE,
 	MGMT_APP_REGISTER,
@@ -107,6 +108,21 @@ int read_data(uint32_t offset, uint8_t *data, size_t size)
 	return ret_value;
 }
 
+int erase_data(uint32_t offset, size_t size)
+{
+	syscall_t sys_ctx;
+	sys_ctx.syscall_no = ERASE_DATA;
+	sys_ctx.size = size;
+	sys_ctx.offset = offset;
+	int ret_value = syscall(&sys_ctx);
+
+	qemu_puts("ERASE_DATA: ");
+	qemu_putinthex(ret_value);
+	qemu_lf();
+
+	return ret_value;
+}
+
 int main(void)
 {
 	qemu_puts("Persistent app\n");
@@ -129,8 +145,22 @@ int main(void)
 	}
 
 	led_set(LED_RED);
-	write_data(0x00, tx_buf, sizeof(tx_buf));
-	write_data(0x10000, tx_buf, sizeof(tx_buf));
+	for (size_t i = 0; i < 0x20000; i += 0x1000) {
+		if (erase_data(i, sizeof(tx_buf))) {
+			qemu_puts("erase failed at: \n");
+			qemu_putinthex(i);
+			assert(1 == 2);
+		}
+	}
+
+	for (size_t i = 0; i < 0x20000; i += 0x1000) {
+		if (write_data(i, tx_buf, sizeof(tx_buf))) {
+			qemu_puts("write failed at: \n");
+			qemu_putinthex(i);
+			assert(1 == 2);
+		}
+	}
+
 	led_set(LED_GREEN);
 
 	uint8_t rx_buf[4096] = {0x00};
@@ -148,6 +178,18 @@ int main(void)
 		qemu_puts("memory not equal at 0x10000\n");
 		assert(1 == 2);
 	}
+
+	qemu_puts("Erase? Send any byte..\n");
+	readbyte();
+
+	for (size_t i = 0; i < 0x20000; i += 0x1000) {
+		if (erase_data(i, sizeof(tx_buf))) {
+			qemu_puts("erase failed at: \n");
+			qemu_putinthex(i);
+			assert(1 == 2);
+		}
+	}
+
 
 	qemu_puts("Deallocate? Send any byte..\n");
 	readbyte();
