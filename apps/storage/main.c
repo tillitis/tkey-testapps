@@ -179,6 +179,9 @@ int main(void)
 		assert(1 == 2);
 	}
 
+	qemu_hexdump(rx_buf, sizeof(rx_buf));
+	qemu_lf();
+
 	qemu_puts("Erase? Send any byte..\n");
 	readbyte();
 
@@ -189,7 +192,6 @@ int main(void)
 			assert(1 == 2);
 		}
 	}
-
 
 	qemu_puts("Deallocate? Send any byte..\n");
 	readbyte();
