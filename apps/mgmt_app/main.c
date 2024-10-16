@@ -27,6 +27,7 @@ typedef struct {
 	uint8_t *data;
 	size_t size;
 	uint32_t *ctx;
+	int ret_value;
 } syscall_t;
 
 enum syscall_cmd {
@@ -82,15 +83,15 @@ int syscall(syscall_t *ctx)
 
 bool register_mgmt()
 {
-	syscall_t sys_ctx;
+	syscall_t sys_ctx = {0x00};
 	sys_ctx.syscall_no = MGMT_APP_REGISTER;
-	int ret = syscall(&sys_ctx);
+	syscall(&sys_ctx);
 
 	qemu_puts("MGMT_APP_REGISTER: ");
-	qemu_putinthex(ret);
+	qemu_putinthex(sys_ctx.ret_value);
 	qemu_lf();
 
-	return ret;
+	return sys_ctx.ret_value;
 }
 
 bool unregister_mgmt()
@@ -114,7 +115,7 @@ int preload_store(struct context *ctx, uint32_t size)
 	sys_ctx.size = size;
 	sys_ctx.data = ctx->loadaddr;
 
-	int ret = syscall(&sys_ctx);
+	syscall(&sys_ctx);
 
 	ctx->offset += size;
 
@@ -122,10 +123,10 @@ int preload_store(struct context *ctx, uint32_t size)
 	qemu_putinthex(sys_ctx.offset);
 	qemu_lf();
 	qemu_puts("ret: ");
-	qemu_putinthex(ret);
+	qemu_putinthex(sys_ctx.ret_value);
 	qemu_lf();
 
-	return ret;
+	return sys_ctx.ret_value;
 }
 
 int preload_store_finalize(struct context *ctx)
@@ -136,14 +137,14 @@ int preload_store_finalize(struct context *ctx)
 	sys_ctx.size = ctx->app_size;
 	sys_ctx.data = ctx->uss;
 
-	int ret = syscall(&sys_ctx);
+	syscall(&sys_ctx);
 
 	qemu_puts("PRELOAD_STORE_FINALIZE: ");
 	qemu_puts("ret: ");
-	qemu_putinthex(ret);
+	qemu_putinthex(sys_ctx.ret_value);
 	qemu_lf();
 
-	return ret;
+	return sys_ctx.ret_value;
 }
 
 int preload_delete()
@@ -151,13 +152,13 @@ int preload_delete()
 	syscall_t sys_ctx;
 	sys_ctx.syscall_no = PRELOAD_DELETE;
 
-	bool ret = syscall(&sys_ctx);
+	syscall(&sys_ctx);
 
 	qemu_puts("PRELOAD_DELETE: ");
-	qemu_putinthex(ret);
+	qemu_putinthex(sys_ctx.ret_value);
 	qemu_lf();
 
-	return ret;
+	return sys_ctx.ret_value;
 }
 
 // read_command takes a frame header and a command to fill in after
