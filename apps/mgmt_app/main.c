@@ -261,6 +261,7 @@ static enum state initial_commands(const struct frame_header *hdr,
 		ctx->app_size = local_app_size;
 		ctx->left = local_app_size;
 		ctx->count = 0;
+		ctx->offset = 0;
 
 		// Do we have a USS at all?
 		if (cmd[5] != 0) {
@@ -492,7 +493,8 @@ int main(void)
 
 		case STATE_RUN:
 			// Force a reset to authenticate app
-			while (!*can_tx) { // Make sure all bytes are flushed before the reset.
+			while (!*can_tx) { // Make sure all bytes are flushed
+					   // before the reset.
 			}
 			*sys_reset = 1;
 			break;
