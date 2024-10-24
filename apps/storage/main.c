@@ -23,6 +23,7 @@ typedef struct {
 	uint8_t *data;
 	size_t size;
 	uint32_t *ctx;
+	int ret_value;
 } syscall_t;
 
 enum syscall_cmd {
@@ -33,6 +34,7 @@ enum syscall_cmd {
 	READ_DATA,
 	ERASE_DATA,
 	PRELOAD_STORE,
+	PRELOAD_STORE_FINALIZE,
 	PRELOAD_DELETE,
 	MGMT_APP_REGISTER,
 	MGMT_APP_UNREGISTER,
@@ -53,13 +55,13 @@ bool alloc_area()
 	/* check if we have an area, otherwise allocate one */
 	syscall_t sys_ctx;
 	sys_ctx.syscall_no = ALLOC_AREA;
-	int ret = syscall(&sys_ctx);
+	syscall(&sys_ctx);
 
 	qemu_puts("ALLOC_AREA: ");
-	qemu_putinthex(ret);
+	qemu_putinthex(sys_ctx.ret_value);
 	qemu_lf();
 
-	return ret;
+	return sys_ctx.ret_value;
 }
 
 bool dealloc_area()
@@ -67,13 +69,13 @@ bool dealloc_area()
 	/* check if we have an area, otherwise allocate one */
 	syscall_t sys_ctx;
 	sys_ctx.syscall_no = DEALLOC_AREA;
-	bool ret = syscall(&sys_ctx);
+	syscall(&sys_ctx);
 
 	qemu_puts("DEALLOC_AREA: ");
-	qemu_putinthex(ret);
+	qemu_putinthex(sys_ctx.ret_value);
 	qemu_lf();
 
-	return ret;
+	return sys_ctx.ret_value;
 }
 
 int write_data(uint32_t offset, uint8_t *data, size_t size)
@@ -83,13 +85,13 @@ int write_data(uint32_t offset, uint8_t *data, size_t size)
 	sys_ctx.data = data;
 	sys_ctx.size = size;
 	sys_ctx.offset = offset;
-	int ret = syscall(&sys_ctx);
+	syscall(&sys_ctx);
 
 	qemu_puts("WRITE_DATA: ");
-	qemu_putinthex(ret);
+	qemu_putinthex(sys_ctx.ret_value);
 	qemu_lf();
 
-	return ret;
+	return sys_ctx.ret_value;
 }
 
 int read_data(uint32_t offset, uint8_t *data, size_t size)
@@ -99,13 +101,13 @@ int read_data(uint32_t offset, uint8_t *data, size_t size)
 	sys_ctx.data = data;
 	sys_ctx.size = size;
 	sys_ctx.offset = offset;
-	int ret_value = syscall(&sys_ctx);
+	syscall(&sys_ctx);
 
 	qemu_puts("READ_DATA: ");
-	qemu_putinthex(ret_value);
+	qemu_putinthex(sys_ctx.ret_value);
 	qemu_lf();
 
-	return ret_value;
+	return sys_ctx.ret_value;
 }
 
 int erase_data(uint32_t offset, size_t size)
@@ -114,13 +116,13 @@ int erase_data(uint32_t offset, size_t size)
 	sys_ctx.syscall_no = ERASE_DATA;
 	sys_ctx.size = size;
 	sys_ctx.offset = offset;
-	int ret_value = syscall(&sys_ctx);
+	syscall(&sys_ctx);
 
 	qemu_puts("ERASE_DATA: ");
-	qemu_putinthex(ret_value);
+	qemu_putinthex(sys_ctx.ret_value);
 	qemu_lf();
 
-	return ret_value;
+	return sys_ctx.ret_value;
 }
 
 int main(void)
