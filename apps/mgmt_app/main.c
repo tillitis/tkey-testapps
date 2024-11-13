@@ -15,6 +15,7 @@
 #include "app_proto.h"
 
 #define TK1_MMIO_TK1_SYSTEM_RESET 0xff0001C0
+#define TK1_MMIO_TK1_SYSCALL 0xff000048
 
 // clang-format off
 static volatile uint32_t *const sys_reset	= (volatile uint32_t *)TK1_MMIO_TK1_SYSTEM_RESET;
@@ -76,7 +77,7 @@ typedef int (*fw_syscall_p)(syscall_t *ctx);
 int syscall(syscall_t *ctx)
 {
 	fw_syscall_p const fw_syscall =
-	    (fw_syscall_p) * (volatile uint32_t *)TK1_MMIO_TK1_BLAKE2S;
+	    (fw_syscall_p) * (volatile uint32_t *)TK1_MMIO_TK1_SYSCALL;
 
 	return fw_syscall(ctx);
 }
