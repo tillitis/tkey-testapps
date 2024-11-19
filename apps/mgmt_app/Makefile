@@ -42,7 +42,7 @@ clean:
 	rm -f app.bin app.elf main.o app_proto.o
 
 # Uses ../.clang-format
-FMTFILES= nx/main.c
+FMTFILES= *.[ch]
 
 .PHONY: fmt
 fmt:
