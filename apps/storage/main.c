@@ -185,7 +185,7 @@ int main(void)
 	qemu_hexdump(rx_buf, sizeof(rx_buf));
 	qemu_lf();
 
-	led_set(LED_GREEN|LED_RED);
+	led_set(LED_GREEN | LED_RED);
 	qemu_puts("Erase? Send any byte..\n");
 	readbyte();
 
@@ -197,7 +197,7 @@ int main(void)
 		}
 	}
 
-	led_set(LED_BLUE|LED_RED);
+	led_set(LED_BLUE | LED_RED);
 	qemu_puts("Deallocate? Send any byte..\n");
 	readbyte();
 
