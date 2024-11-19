@@ -1,6 +1,5 @@
-
 .PHONY: all
-all: timer rng_stream storage blink nx touch
+all: timer rng_stream storage blink nx touch mgmt_app
 
 %/app.bin:
 	$(MAKE) -C $(@D) all
@@ -17,6 +16,8 @@ timer: timer/app.bin
 
 touch: touch/app.bin
 
+mgmt_app: mgmt_app/app.bin
+
 .PHONY: checkfmt
 checkfmt:
 	$(MAKE) -C nx checkfmt
@@ -24,6 +25,7 @@ checkfmt:
 	$(MAKE) -C storage checkfmt
 	$(MAKE) -C timer checkfmt
 	$(MAKE) -C touch checkfmt
+	$(MAKE) -C mgmt_app checkfmt
 
 .PHONY: clean
 clean:
@@ -33,3 +35,4 @@ clean:
 	$(MAKE) -C storage clean
 	$(MAKE) -C timer clean
 	$(MAKE) -C touch clean
+	$(MAKE) -C mgmt_app clean
