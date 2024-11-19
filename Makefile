@@ -28,8 +28,8 @@ apps:
 runtimer:
 	go build ./cmd/runtimer
 
-.PHONY: tkey-mgmt
-tkey-mgmt:
+tkey-mgmt: apps
+	cp apps/mgmt_app/app.bin cmd/tkey-mgmt/app.bin
 	go build -ldflags "-w -X main.version=$(TKEY_RUNAPP_VERSION) -buildid=" -trimpath ./cmd/tkey-mgmt
 
 .PHONY: clean
