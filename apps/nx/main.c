@@ -1,5 +1,5 @@
 // Copyright (C) 2023-2024 - Tillitis AB
-// SPDX-License-Identifier: GPL-2.0-only
+// SPDX-License-Identifier: BSD-2-Clause
 
 // Test of the execution monitor. Should blink green 5 times, then the
 // CPU should trap and start blinking red.

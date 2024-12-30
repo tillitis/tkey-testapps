@@ -1,7 +1,7 @@
 #! /bin/sh
 
-# Copyright (C) 2023-2024 - Tillitis AB
-# SPDX-License-Identifier: GPL-2.0-only
+# Copyright (C) 2023 - Tillitis AB
+# SPDX-License-Identifier: BSD-2-Clause
 
 tkey_libs_version="v0.1.1"
 
