@@ -15,6 +15,7 @@ tag="SPDX-License-Identifier:"
 
 missingok_dirs=(
 .github/workflows/
+LICENSES/
 )
 
 missingok_files=(
@@ -26,6 +27,7 @@ LICENSE
 Makefile
 README.md
 RELEASE.md
+REUSE.toml
 apps/Makefile
 apps/blink/Makefile
 apps/nx/Makefile
@@ -34,7 +36,6 @@ apps/rng_stream/Makefile
 apps/timer/Makefile
 apps/touch/Makefile
 build.sh
-dco.md
 go.mod
 go.sum
 system/60-tkey.rules
