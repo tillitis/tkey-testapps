@@ -24,6 +24,10 @@ Device apps:
   with data with `runtimer`.
 - `touch`: Example/test app for the touch sensor. Cycles between
   colours when touching.
+- `signbench`: Benchmark time for an Ed25519 signature over a
+  hardcoded message using the Monocypher function in tkey-libs.
+  Outputs measurements in milliseconds in hex. Attach with picocom or
+  similar. Start measurements by sending a character.
 
 See the [TKey Developer Handbook](https://dev.tillitis.se/) for how to
 develop your own apps, how to run and debug them in the emulator or on

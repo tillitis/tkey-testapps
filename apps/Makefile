@@ -1,9 +1,10 @@
-
 .PHONY: all
-all: timer rng_stream blink nx touch
+all: signbench timer rng_stream blink nx touch
 
 %/app.bin:
 	$(MAKE) -C $(@D) all
+
+signbench: signbench/app.bin
 
 blink: blink/app.bin
 
@@ -17,6 +18,7 @@ touch: touch/app.bin
 
 .PHONY: checkfmt
 checkfmt:
+	$(MAKE) -C signbench checkfmt
 	$(MAKE) -C nx checkfmt
 	$(MAKE) -C rng_stream checkfmt
 	$(MAKE) -C timer checkfmt
@@ -24,6 +26,7 @@ checkfmt:
 
 .PHONY: clean
 clean:
+	$(MAKE) -C signbench clean
 	$(MAKE) -C blink clean
 	$(MAKE) -C nx clean
 	$(MAKE) -C rng_stream clean
