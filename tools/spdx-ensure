@@ -36,6 +36,7 @@ apps/rng_stream/Makefile
 apps/timer/Makefile
 apps/touch/Makefile
 apps/signbench/Makefile
+apps/usb_echo/Makefile
 build.sh
 go.mod
 go.sum

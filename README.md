@@ -28,6 +28,10 @@ Device apps:
   hardcoded message using the Monocypher function in tkey-libs.
   Outputs measurements in milliseconds in hex. Attach with picocom or
   similar. Start measurements by sending a character.
+- `usb_echo`: Test app for the USB controller. Received data is echoed
+  back to the same USB interface as from where it was received. Note:
+  The USB controller firmware has to support the multi-endpoint USB
+  controller protocol.
 
 See the [TKey Developer Handbook](https://dev.tillitis.se/) for how to
 develop your own apps, how to run and debug them in the emulator or on

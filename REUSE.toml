@@ -26,6 +26,7 @@ path = [
      "apps/rng_stream/README.md",
      "apps/timer/Makefile",
      "apps/touch/Makefile",
+     "apps/usb_echo/Makefile",
      "system/60-tkey.rules",
      "test/requirements.txt"
 ]
