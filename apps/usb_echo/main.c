@@ -26,6 +26,7 @@ int main(void)
 	enum ioend ep = 0;
 	uint8_t len = 0;
 	uint8_t data[256];
+	uint8_t led_color = LED_BLUE;
 
 	config_endpoints(ENABLED_EPS);
 
@@ -34,10 +35,14 @@ int main(void)
 	*cpu_mon_last = TK1_RAM_BASE + TK1_RAM_SIZE;
 	*cpu_mon_ctrl = 1;
 
-	led_set(LED_BLUE);
 
 	for (;;) {
+		led_set(led_color);
 
+		if (led_color != LED_BLUE) {
+			led_color = LED_BLUE;
+		} else {
+			led_color = LED_RED;
 		}
 
 		readselect(IO_CDC | IO_FIDO, &ep, &len);
