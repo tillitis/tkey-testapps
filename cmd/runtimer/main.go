@@ -127,8 +127,8 @@ func (t Timer) StartTimer() error {
 	return nil
 }
 
-// matching device clock at 18 MHz
-const defaultPrescaler = 18_000_000
+// matching device clock at 24 MHz (Castor)
+const defaultPrescaler = 24_000_000
 
 func main() {
 	var devPath string
