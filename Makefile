@@ -25,6 +25,7 @@ apps:
 	$(MAKE) -C apps/blink 
 	$(MAKE) -C apps/nx
 	$(MAKE) -C apps/rng_stream
+	$(MAKE) -C apps/storage
 	$(MAKE) -C apps/timer
 	$(MAKE) -C apps/touch
 
@@ -36,6 +37,7 @@ runtimer:
 checkfmt:
 	$(MAKE) -C apps/nx checkfmt
 	$(MAKE) -C apps/rng_stream checkfmt
+	$(MAKE) -C apps/storage checkfmt
 	$(MAKE) -C apps/timer checkfmt
 	$(MAKE) -C apps/touch checkfmt
 
@@ -45,6 +47,7 @@ clean:
 	$(MAKE) -C apps/blink clean
 	$(MAKE) -C apps/nx clean
 	$(MAKE) -C apps/rng_stream clean
+	$(MAKE) -C apps/storage clean
 	$(MAKE) -C apps/timer clean
 	$(MAKE) -C apps/touch clean
 
