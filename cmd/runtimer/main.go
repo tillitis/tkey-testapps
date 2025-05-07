@@ -79,7 +79,7 @@ func (t Timer) setInt(sendCmd appCmd, expectedReceiveCmd appCmd, i int) error {
 	tx[5] = byte(i >> 24)
 	tkeyclient.Dump("tx", tx)
 	if err = t.tk.Write(tx); err != nil {
-		return fmt.Errorf("Write: %w", err)
+		return fmt.Errorf("write: %w", err)
 	}
 
 	rx, _, err := t.tk.ReadFrame(expectedReceiveCmd, id)
@@ -89,7 +89,7 @@ func (t Timer) setInt(sendCmd appCmd, expectedReceiveCmd appCmd, i int) error {
 	}
 
 	if rx[2] != tkeyclient.StatusOK {
-		return fmt.Errorf("Command BAD")
+		return fmt.Errorf("command BAD")
 	}
 
 	return nil
@@ -107,21 +107,21 @@ func (t Timer) StartTimer() error {
 	id := 2
 	tx, err := tkeyclient.NewFrameBuf(cmdStartTimer, id)
 	if err != nil {
-		return fmt.Errorf("NewFrameBuf: %w", err)
+		return fmt.Errorf("couldn't create new frame: %w", err)
 	}
 
 	if err = t.tk.Write(tx); err != nil {
-		return fmt.Errorf("Write: %w", err)
+		return fmt.Errorf("couldn't write: %w", err)
 	}
 
 	rx, _, err := t.tk.ReadFrame(rspStartTimer, id)
 	tkeyclient.Dump("rx", rx)
 	if err != nil {
-		return fmt.Errorf("ReadFrame: %w", err)
+		return fmt.Errorf("couldn't read: %w", err)
 	}
 
 	if rx[2] != tkeyclient.StatusOK {
-		return fmt.Errorf("Command BAD")
+		return fmt.Errorf("not ok")
 	}
 
 	return nil
