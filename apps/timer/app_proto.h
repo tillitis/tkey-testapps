@@ -19,10 +19,12 @@ enum appcmd {
 	APP_CMD_GET_NAMEVERSION = 0x09,
 	APP_RSP_GET_NAMEVERSION = 0x0a,
 
+	APP_CMD_FW_PROBE = 0xff,
+
 	APP_RSP_UNKNOWN_CMD     = 0xff,
 };
 // clang-format on
 
 void appreply(struct frame_header hdr, enum appcmd rspcode, void *buf);
-
+void appreply_nok(struct frame_header hdr);
 #endif
