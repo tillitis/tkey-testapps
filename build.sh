@@ -3,7 +3,7 @@
 # Copyright (C) 2023 - Tillitis AB
 # SPDX-License-Identifier: BSD-2-Clause
 
-tkey_libs_version="v0.1.1"
+tkey_libs_version="fw-4"
 
 printf "Building tkey-libs with version: %s\n" "$tkey_libs_version"
 
