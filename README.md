@@ -24,6 +24,8 @@ Device apps:
   with data with `runtimer`.
 - `touch`: Example/test app for the touch sensor. Cycles between
   colours when touching.
+- `next_app_data`: Read the data left by the previous app in the
+  chain.
 
 See the [TKey Developer Handbook](https://dev.tillitis.se/) for how to
 develop your own apps, how to run and debug them in the emulator or on
