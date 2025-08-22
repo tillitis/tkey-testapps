@@ -12,6 +12,7 @@ static volatile uint32_t *touch = (volatile uint32_t *)TK1_MMIO_TOUCH_STATUS;
 #define LED_RED   (1 << TK1_MMIO_TK1_LED_R_BIT)
 #define LED_GREEN (1 << TK1_MMIO_TK1_LED_G_BIT)
 #define LED_BLUE  (1 << TK1_MMIO_TK1_LED_B_BIT)
+#define LED_WHITE (LED_RED | LED_GREEN | LED_BLUE)
 // clang-format on
 
 void wait_touch_ledflash(int ledvalue, int loopcount)
@@ -36,11 +37,14 @@ touched:
 int main(void)
 {
 
+	// Start blinking white when app is loaded.
+	wait_touch_ledflash(LED_WHITE, 350000);
+
 	for (;;) {
 		// Wait for a touch, confirming a successful touch by
 		// waiting with a new color. Continuing indefinitely.
-		wait_touch_ledflash(LED_GREEN, 350000);
 		wait_touch_ledflash(LED_RED, 350000);
+		wait_touch_ledflash(LED_GREEN, 350000);
 		wait_touch_ledflash(LED_BLUE, 350000);
 	}
 }
