@@ -19,6 +19,7 @@ path = [
      "go.mod",
      "go.sum",
      "apps/Makefile",
+     "apps/signbench/Makefile",     
      "apps/blink/Makefile",
      "apps/nx/Makefile",
      "apps/rng_stream/Makefile",

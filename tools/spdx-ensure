@@ -35,6 +35,7 @@ apps/rng_stream/README.md
 apps/rng_stream/Makefile
 apps/timer/Makefile
 apps/touch/Makefile
+apps/signbench/Makefile
 build.sh
 go.mod
 go.sum
