@@ -4,10 +4,10 @@
 #include <monocypher/monocypher-ed25519.h>
 #include <stdbool.h>
 #include <tkey/assert.h>
+#include <tkey/debug.h>
 #include <tkey/led.h>
 #include <tkey/lib.h>
 #include <tkey/proto.h>
-#include <tkey/qemu_debug.h>
 #include <tkey/tk1_mem.h>
 #include <tkey/touch.h>
 
@@ -29,37 +29,10 @@ struct context {
 	uint32_t message_size;
 };
 
-void puts(char *s)
-{
-	for (char *c = s; *c != '\0'; c++) {
-		writebyte(*c);
-	}
-}
-
-void puthex(uint8_t c)
-{
-	unsigned int upper = (c >> 4) & 0xf;
-	unsigned int lower = c & 0xf;
-	writebyte(upper < 10 ? '0' + upper : 'A' - 10 + upper);
-	writebyte(lower < 10 ? '0' + lower : 'A' - 10 + lower);
-}
-
-void putinthex(const uint32_t n)
-{
-	uint8_t buf[4];
-
-	memcpy(buf, &n, 4);
-	for (int i = 3; i > -1; i--) {
-		puthex(buf[i]);
-	}
-	writebyte('\r');
-	writebyte('\n');
-}
-
 void puthexn(uint8_t *p, int n)
 {
 	for (int i = 0; i < n; i++) {
-		puthex(p[i]);
+		puthex(IO_UART, p[i]);
 	}
 }
 
@@ -79,9 +52,10 @@ int main(void)
 	ctx.message_size = 22;
 
 	// Wait for terminal program and a character to be typed
-	readbyte();
+	uint8_t buf_discard;
+	uart_read(&buf_discard, 1, 1);
 
-	puts("Outputs signing times in hex in milliseconds\r\n");
+	puts(IO_UART, "Outputs signing times in hex in milliseconds\r\n");
 
 	// Set prescaler so we count in milliseconds. CPU freq is 18
 	// MHz, so this means 18 000.
@@ -99,6 +73,6 @@ int main(void)
 				    ctx.message_size);
 		end = *timer;
 
-		putinthex(start - end);
+		putinthex(IO_UART, start - end);
 	}
 }
