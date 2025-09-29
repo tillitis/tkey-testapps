@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 #include <tkey/assert.h>
-#include <tkey/led.h>
 #include <tkey/io.h>
+#include <tkey/led.h>
 #include <tkey/tk1_mem.h>
 
 #define FORWARD_TO_DEBUG_HID 0
@@ -34,7 +34,6 @@ int main(void)
 	*cpu_mon_first = *app_addr + *app_size;
 	*cpu_mon_last = TK1_RAM_BASE + TK1_RAM_SIZE;
 	*cpu_mon_ctrl = 1;
-
 
 	for (;;) {
 		led_set(led_color);
